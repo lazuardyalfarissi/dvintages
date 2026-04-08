@@ -393,6 +393,8 @@ export default function AdminPage() {
                     <option value="Celana">Celana</option>
                     <option value="Jacket">Jacket</option>
                     <option value="Vest">Vest</option>
+                    <option value="Sepatu">Sepatu</option>
+                    <option value="Tas">Tas</option>
                   </select>
                 </div>
                 <div className="form-group">

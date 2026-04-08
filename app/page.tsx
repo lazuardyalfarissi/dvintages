@@ -46,7 +46,7 @@ function Navbar({ onCategoryChange }: { onCategoryChange: (cat: string) => void 
           <li className="dropdown">
             <a href="#" className="dropbtn">Products ▼</a>
             <div className="dropdown-content">
-              {["all", "Baju", "Celana", "Jacket", "Vest"].map((cat) => (
+              {["all", "Baju", "Celana", "Jacket", "Vest", "Sepatu", "Tas"].map((cat) => (
                 <a key={cat} onClick={() => onCategoryChange(cat)} style={{ cursor: "pointer" }}>
                   {cat === "all" ? "All" : cat}
                 </a>

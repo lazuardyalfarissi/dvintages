@@ -111,7 +111,7 @@ export default function ProductDetailPage() {
             <li className="dropdown">
               <a href="javascript:void(0)" className="dropbtn">Products ▼</a>
               <div className="dropdown-content">
-                {["all", "Baju", "Celana", "Jacket", "Vest"].map((cat) => (
+                {["all", "Baju", "Celana", "Jacket", "Vest", "Sepatu", "Tas"].map((cat) => (
                   <a key={cat} href={`/?category=${cat}`}>{cat === "all" ? "All" : cat}</a>
                 ))}
               </div>
