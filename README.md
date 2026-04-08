@@ -1,4 +1,24 @@
-🛍️ DVINTAGES — Modern Thrift Store & Inventory SystemDVINTAGES adalah transformasi dari sistem PHP Native menjadi aplikasi web modern berbasis Next.js 14 App Router. Proyek ini dirancang untuk UMKM yang membutuhkan platform e-commerce cepat, responsif, dan terintegrasi langsung dengan manajemen stok serta pemesanan via WhatsApp.✨ Fitur Utama🚀 High Performance: Server-side Rendering (SSR) untuk SEO yang lebih baik.🔐 Secure Admin Dashboard: Manajemen produk, banner, dan pesanan terlindungi oleh NextAuth.js.📦 Real-time Inventory: Pantau stok produk secara akurat.🖼️ Cloud Image Storage: Integrasi Supabase Storage untuk handling gambar tanpa membebani server.📱 Responsive & Mobile Fit: Tampilan yang sudah dioptimasi untuk Android dan iOS (No Horizontal Scroll).🌓 Theme Toggle: Dukungan Dark Mode dan Light Mode yang nyaman di mata.💬 WhatsApp Integration: Alur pemesanan yang langsung terhubung ke admin via WhatsApp API.⚡ Tech StackKebutuhanSolusiFrameworkNext.js 14 (App Router)LanguageTypeScriptDatabaseMySQL (Remote Access Ready)Auth SystemNextAuth.js (JWT + Session)File HostingSupabase StorageStylingCSS Modules & Global Styling📁 Struktur ProjectPlaintextdvintages/
+🛍️ DVINTAGES — Modern Thrift Store & Inventory System
+DVINTAGES adalah transformasi dari sistem PHP Native menjadi aplikasi web modern berbasis Next.js 14 App Router. Proyek ini dirancang untuk UMKM yang membutuhkan platform e-commerce cepat, responsif, dan terintegrasi langsung dengan manajemen stok serta pemesanan via WhatsApp.✨ 
+Fitur Utama
+1. 🚀 High Performance: Server-side Rendering (SSR) untuk SEO yang lebih baik.
+2. 🔐 Secure Admin Dashboard: Manajemen produk, banner, dan pesanan terlindungi oleh NextAuth.js. 
+3. 📦 Real-time Inventory: Pantau stok produk secara akurat.
+4. 🖼️ Cloud Image Storage: Integrasi Supabase Storage untuk handling gambar tanpa membebani server.
+5. 📱 Responsive & Mobile Fit: Tampilan yang sudah dioptimasi untuk Android dan iOS (No Horizontal Scroll).
+6. 🌓 Theme Toggle: Dukungan Dark Mode dan Light Mode yang nyaman di mata.
+7. 💬 WhatsApp Integration: Alur pemesanan yang langsung terhubung ke admin via WhatsApp API.
+
+⚡ Tech Stack
+Kebutuhan dan Solusi
+Framework Next.js 14 (App Router)
+Language TypeScript 
+Database MySQL (Remote Access Ready)
+Auth System NextAuth.js (JWT + Session)
+File Hosting Supabase Storage
+Styling CSS Modules & Global Styling
+
+📁 Struktur ProjectPlaintextdvintages/
 
 ├── app/
 │   ├── page.tsx                # Storefront (Home)
