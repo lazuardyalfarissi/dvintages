@@ -1,57 +1,83 @@
-🛍️ DVINTAGES — Modern Thrift Store & Inventory System
-DVINTAGES adalah transformasi dari sistem PHP Native menjadi aplikasi web modern berbasis Next.js 14 App Router. Proyek ini dirancang untuk UMKM yang membutuhkan platform e-commerce cepat, responsif, dan terintegrasi langsung dengan manajemen stok serta pemesanan via WhatsApp.✨ 
-Fitur Utama
-1. 🚀 High Performance: Server-side Rendering (SSR) untuk SEO yang lebih baik.
-2. 🔐 Secure Admin Dashboard: Manajemen produk, banner, dan pesanan terlindungi oleh NextAuth.js. 
-3. 📦 Real-time Inventory: Pantau stok produk secara akurat.
-4. 🖼️ Cloud Image Storage: Integrasi Supabase Storage untuk handling gambar tanpa membebani server.
-5. 📱 Responsive & Mobile Fit: Tampilan yang sudah dioptimasi untuk Android dan iOS (No Horizontal Scroll).
-6. 🌓 Theme Toggle: Dukungan Dark Mode dan Light Mode yang nyaman di mata.
-7. 💬 WhatsApp Integration: Alur pemesanan yang langsung terhubung ke admin via WhatsApp API.
+# 🛍️ DVINTAGES — Modern Thrift Store & Inventory System
 
-⚡ Tech Stack
-Kebutuhan dan Solusi
-Framework Next.js 14 (App Router)
-Language TypeScript 
-Database MySQL (Remote Access Ready)
-Auth System NextAuth.js (JWT + Session)
-File Hosting Supabase Storage
-Styling CSS Modules & Global Styling
+DVINTAGES adalah aplikasi web e-commerce untuk UMKM thrift store yang dibangun menggunakan Next.js 14 App Router. Sistem ini menyediakan manajemen produk, stok, dan pemesanan terintegrasi dengan WhatsApp untuk alur transaksi yang cepat dan efisien.
 
-📁 Struktur ProjectPlaintextdvintages/
+## ✨ Fitur
 
+- High Performance (SSR)
+- Secure Admin Dashboard (NextAuth.js)
+- Real-time Inventory Management
+- Cloud Image Storage (Supabase)
+- Responsive Design (Mobile & Desktop)
+- Dark & Light Mode
+- WhatsApp Order Integration
+
+## ⚙️ Tech Stack
+
+- Next.js 14 (App Router)
+- TypeScript
+- MySQL
+- NextAuth.js
+- Supabase Storage
+- CSS Modules
+
+## 📁 Struktur Project
+
+```
+dvintages/
 ├── app/
-│   ├── page.tsx                # Storefront (Home)
-│   ├── product/[id]/page.tsx   # Detail Produk
-│   ├── admin/                  # Dashboard Area (Protected)
-│   └── api/                    # Backend API Routes
-├── lib/                        # Konfigurasi DB, Auth, & Supabase
-├── types/                      # TypeScript Definitions
-├── styles/                     # CSS Modules & Store Styling
-└── .env.local.example          # Template Environment Variables
+│   ├── page.tsx
+│   ├── product/[id]/page.tsx
+│   ├── admin/
+│   └── api/
+├── lib/
+├── types/
+├── styles/
+└── .env.local.example
+```
 
-🚀 Setup & Installation
+## 🚀 Installation
 
-1. Kloning Repo & Install Bashgit clone https://github.com/lazuardyalfarissi/dvintages.git
+```bash
+git clone https://github.com/lazuardyalfarissi/dvintages.git
 cd dvintages
 npm install
+```
 
-2. Konfigurasi Environment VariablesBuat file .env.local dan isi sesuai kredensial Anda:Cuplikan kode# Database
-DB_HOST=your-mysql-host
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
+## ⚙️ Environment Variables
+
+```env
+DB_HOST=
+DB_USER=
+DB_PASSWORD=
 DB_NAME=toko_online_mini
 
-# NextAuth
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=pake_openssl_buat_generate
-ADMIN_PASSWORD=admin123
+NEXTAUTH_SECRET=
+ADMIN_PASSWORD=
 
-# Supabase Storage
-NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=xxxx
-SUPABASE_SERVICE_ROLE_KEY=xxxx
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_BUCKET=dvintages
+```
 
-3. Jalankan di LokalBashnpm run dev
-Buka http://localhost:3000 untuk melihat hasilnya.🔄 Mapping: Migrasi dari PHP ke Next.jsFiturPHP Native (Old)Next.js 14 (New)Routingproduct_detail.php?id=1/product/1 (Dynamic Routes)Session$_SESSION['admin']useSession() (NextAuth)Uploadmove_uploaded_file()supabase.storage.upload()APIapi/get_products.php/api/products/route.ts👤 AuthorLazuardy Al Farissi Fullstack Developer | Coder | Hustler 🌐 Portfolio: lazuardyalf.com
+## ▶️ Run
+
+```bash
+npm run dev
+```
+
+## 🔄 Migration
+
+| Feature | PHP Native | Next.js |
+|--------|------------|--------|
+| Routing | product_detail.php?id=1 | /product/1 |
+| Session | $_SESSION | NextAuth |
+| Upload | move_uploaded_file | Supabase Storage |
+| API | PHP API | Next.js API Routes |
+
+## 👤 Author
+
+Lazuardy Al Farissi
+https://lazuardyalf.com
