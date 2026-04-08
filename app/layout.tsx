@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DVINTAGES - Vintages Streetwear",
-  description: "Gaya Lo Makin Kalcer Abiss!",
+  description: "Bikin Gaya Lo Makin Kalcer Abiss!",
 };
 
 export default function RootLayout({

@@ -98,7 +98,7 @@ function BannerCarousel({ banners }: { banners: Banner[] }) {
         <div className="banner-slides">
           <div className="banner-slide" style={{ backgroundImage: "url('https://wmikyjdtklhvdrsfkqdq.supabase.co/storage/v1/object/public/dvintages/assets/banner.jpg')" }}>
             <h1>DVINTAGES</h1>
-            <p>Gaya Lo Makin Kalcer Abiss!</p>
+            <p>Bikin Gaya Lo Makin Kalcer Abiss!</p>
             <a href="#product-section" className="cta-button" onClick={scrollToProducts}>Shop</a>
           </div>
         </div>
