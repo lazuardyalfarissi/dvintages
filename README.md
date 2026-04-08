@@ -30,7 +30,9 @@ Styling CSS Modules & Global Styling
 ├── styles/                     # CSS Modules & Store Styling
 └── .env.local.example          # Template Environment Variables
 
-🚀 Setup & Installation1. Kloning Repo & InstallBashgit clone https://github.com/lazuardyalfarissi/dvintages.git
+🚀 Setup & Installation
+
+1. Kloning Repo & Install Bashgit clone https://github.com/lazuardyalfarissi/dvintages.git
 cd dvintages
 npm install
 
