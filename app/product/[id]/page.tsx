@@ -21,7 +21,11 @@ function OrderModal({ productId, onClose }: { productId: number; onClose: () => 
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
       const { orderId, productName, waNumber } = data.data;
-      const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\n\nMohon info untuk pembayaran. Terima kasih.`;
+
+      // Pastikan 2 baris ini ada ✅
+      const productUrl = `${window.location.origin}/products/${productId}`;
+      const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
+      
       window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
       onClose();
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }

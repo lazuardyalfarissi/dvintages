@@ -187,27 +187,30 @@ function OrderModal({ productId, onClose }: { productId: number; onClose: () => 
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId, customer_name: name, customer_contact: contact }),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-      const { orderId, productName, waNumber } = data.data;
-      const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\n\nMohon info untuk pembayaran. Terima kasih.`;
-      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
-      onClose();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  try {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ product_id: productId, customer_name: name, customer_contact: contact }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    const { orderId, productName, waNumber } = data.data;
+
+    const productUrl = `${window.location.origin}/product/${productId}`;
+    const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
+
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
+    onClose();
+  } catch (e: any) {
+    setError(e.message);
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <div className="modal-overlay visible" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
