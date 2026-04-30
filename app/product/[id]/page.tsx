@@ -248,9 +248,9 @@ const detailStyles = `
   .product-detail-grid { display: grid; grid-template-columns: 1fr; gap: 0; max-width: 1000px; margin: 0 auto; background: var(--card-bg); border-radius: 12px; box-shadow: 0 10px 25px var(--shadow-color); border: 2px solid var(--border-color); overflow: hidden; }
   @media (min-width: 768px) { .product-detail-grid { grid-template-columns: 1.2fr 1fr; } }
 
-  /* ===== IMAGE GALLERY — FIX UTAMA ===== */
-  .product-detail-image-gallery { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; }
-  .main-product-image-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  /* ===== IMAGE GALLERY ===== */
+  .product-detail-image-gallery { position: relative; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .main-product-image-wrapper { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; }
   .main-product-image { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; display: block; }
   .thumbnail-container { position: absolute; bottom: 10px; left: 10px; right: 10px; display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; z-index: 10; scrollbar-width: none; -ms-overflow-style: none; }
   .thumbnail-container::-webkit-scrollbar { display: none; }
@@ -258,6 +258,12 @@ const detailStyles = `
   .thumbnail-item.active, .thumbnail-item:hover { border-color: var(--primary-color); transform: translateY(-2px); }
   .thumbnail-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .product-detail-sold-out { position: absolute; top: 15px; left: 15px; padding: 6px 12px; background: #fff; color: #1a1a1a; font-size: 0.85rem; font-weight: 700; border-radius: 6px; z-index: 15; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+  /* Thumbnail keluar dari overlay khusus mobile */
+  @media (max-width: 767px) {
+    .thumbnail-container { position: static; padding: 10px 12px; background: var(--card-bg); border-top: 1px solid var(--border-color); }
+    .thumbnail-item { width: 60px; height: 60px; }
+  }
 
   /* ===== PRODUCT INFO ===== */
   .product-detail-info { padding: 1.5rem; display: flex; flex-direction: column; }
