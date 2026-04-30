@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 
 interface Product {
@@ -67,12 +67,25 @@ export default function ProductDetailPage() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // Zoom & gesture state
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoomOrigin, setZoomOrigin] = useState("center center");
+  const [isDragging, setIsDragging] = useState(false);
+  const lastTap = useRef(0);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const pinchStartDist = useRef(0);
+  const pinchStartZoom = useRef(1);
+  const isPinching = useRef(false);
+
   useEffect(() => {
     const saved = localStorage.getItem("theme") as "dark" | "light" | null;
     if (saved === "light") { setTheme("light"); document.body.classList.add("light-mode"); }
   }, []);
 
-  // Load categories dari API
   useEffect(() => {
     fetch("/api/categories")
       .then((r) => r.json())
@@ -96,6 +109,114 @@ export default function ProductDetailPage() {
     setTheme(next);
     document.body.classList.toggle("light-mode");
     localStorage.setItem("theme", next);
+  }
+
+  function resetZoom() {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setZoomOrigin("center center");
+  }
+
+  function clampPan(newPan: { x: number; y: number }, currentZoom: number) {
+    if (!wrapperRef.current) return newPan;
+    const { width, height } = wrapperRef.current.getBoundingClientRect();
+    const maxX = (width * (currentZoom - 1)) / 2;
+    const maxY = (height * (currentZoom - 1)) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, newPan.x)),
+      y: Math.max(-maxY, Math.min(maxY, newPan.y)),
+    };
+  }
+
+  // Mouse events (desktop drag saat zoom)
+  function handleMouseDown(e: React.MouseEvent) {
+    if (zoom <= 1) return;
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+  }
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!isDragging || zoom <= 1) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPan(clampPan({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy }, zoom));
+  }
+  function handleMouseEnd() { setIsDragging(false); }
+
+  // Touch events
+  function handleTouchStart(e: React.TouchEvent) {
+    if (e.touches.length === 2) {
+      isPinching.current = true;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStartDist.current = Math.hypot(dx, dy);
+      pinchStartZoom.current = zoom;
+      if (wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const cx = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) / rect.width * 100;
+        const cy = ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top) / rect.height * 100;
+        setZoomOrigin(`${cx}% ${cy}%`);
+      }
+      return;
+    }
+
+    isPinching.current = false;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+
+    if (zoom > 1) {
+      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: pan.x, panY: pan.y };
+    }
+
+    // Double tap to zoom
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      if (zoom > 1) {
+        resetZoom();
+      } else {
+        if (wrapperRef.current) {
+          const rect = wrapperRef.current.getBoundingClientRect();
+          const cx = (e.touches[0].clientX - rect.left) / rect.width * 100;
+          const cy = (e.touches[0].clientY - rect.top) / rect.height * 100;
+          setZoomOrigin(`${cx}% ${cy}%`);
+        }
+        setZoom(2.5);
+      }
+    }
+    lastTap.current = now;
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (e.touches.length === 2 && isPinching.current) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const newZoom = Math.min(4, Math.max(1, pinchStartZoom.current * (dist / pinchStartDist.current)));
+      setZoom(newZoom);
+      if (newZoom <= 1) setPan({ x: 0, y: 0 });
+      return;
+    }
+
+    if (zoom > 1 && e.touches.length === 1) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - dragStart.current.x;
+      const dy = e.touches[0].clientY - dragStart.current.y;
+      setPan(clampPan({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy }, zoom));
+      return;
+    }
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (isPinching.current) { isPinching.current = false; return; }
+    if (zoom > 1) return;
+
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) setMainImgIdx((i) => (i + 1) % images.length);
+      else setMainImgIdx((i) => (i - 1 + images.length) % images.length);
+    }
   }
 
   const isSoldOut = product
@@ -151,20 +272,45 @@ export default function ProductDetailPage() {
             {/* Image Gallery */}
             <div className="product-detail-image-gallery">
               {isSoldOut && <div className="product-detail-sold-out">Sold out</div>}
-              <div className="main-product-image-wrapper">
+              <div
+                className="main-product-image-wrapper"
+                ref={wrapperRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseEnd}
+                onMouseLeave={handleMouseEnd}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={images[mainImgIdx]}
                   alt={product.name}
                   className="main-product-image"
+                  style={{
+                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                    transformOrigin: zoomOrigin,
+                    cursor: zoom > 1 ? "grab" : "default",
+                    transition: isDragging ? "none" : "transform 0.2s ease",
+                  }}
                   onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/1080x1440/222/f0f0f0?text=Error"; }}
+                  draggable={false}
                 />
+                {/* Dot indicator - hanya mobile */}
+                {images.length > 1 && (
+                  <div className="swipe-dots">
+                    {images.map((_, i) => (
+                      <span key={i} className={`swipe-dot${i === mainImgIdx ? " active" : ""}`} />
+                    ))}
+                  </div>
+                )}
               </div>
               {images.length > 1 && (
                 <div className="thumbnail-container">
                   {images.map((url, i) => (
                     <div key={i} className={`thumbnail-item${i === mainImgIdx ? " active" : ""}`}
-                      onClick={() => setMainImgIdx(i)}>
+                      onClick={() => { setMainImgIdx(i); resetZoom(); }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={url} alt={`${product.name} ${i + 1}`}
                         onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/60x60/222/f0f0f0?text=Err"; }} />
@@ -249,9 +395,9 @@ const detailStyles = `
   @media (min-width: 768px) { .product-detail-grid { grid-template-columns: 1.2fr 1fr; } }
 
   /* ===== IMAGE GALLERY ===== */
-  .product-detail-image-gallery { position: relative; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
-  .main-product-image-wrapper { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; }
-  .main-product-image { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; display: block; }
+  .product-detail-image-gallery { position: relative; width: 100%; display: flex; flex-direction: column; }
+  .main-product-image-wrapper { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; touch-action: none; }
+  .main-product-image { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; will-change: transform; }
   .thumbnail-container { position: absolute; bottom: 10px; left: 10px; right: 10px; display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; z-index: 10; scrollbar-width: none; -ms-overflow-style: none; }
   .thumbnail-container::-webkit-scrollbar { display: none; }
   .thumbnail-item { width: 52px; height: 52px; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; flex-shrink: 0; }
@@ -259,10 +405,20 @@ const detailStyles = `
   .thumbnail-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .product-detail-sold-out { position: absolute; top: 15px; left: 15px; padding: 6px 12px; background: #fff; color: #1a1a1a; font-size: 0.85rem; font-weight: 700; border-radius: 6px; z-index: 15; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-  /* Thumbnail keluar dari overlay khusus mobile */
+  /* ===== SWIPE DOTS ===== */
+  .swipe-dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 10; pointer-events: none; }
+  .swipe-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.45); transition: all 0.3s; }
+  .swipe-dot.active { background: #fff; width: 18px; border-radius: 3px; }
+
+  /* Mobile: thumbnail keluar dari overlay, dots tampil */
   @media (max-width: 767px) {
     .thumbnail-container { position: static; padding: 10px 12px; background: var(--card-bg); border-top: 1px solid var(--border-color); }
     .thumbnail-item { width: 60px; height: 60px; }
+    .swipe-dots { display: flex; }
+  }
+  /* Desktop: dots disembunyikan */
+  @media (min-width: 768px) {
+    .swipe-dots { display: none; }
   }
 
   /* ===== PRODUCT INFO ===== */
