@@ -6,6 +6,7 @@ interface Product {
   id: number; name: string; description: string; price: number;
   image_url: string[]; status: string; inventory: number; category: string;
 }
+interface Category { id: number; name: string; }
 
 function OrderModal({ productId, onClose }: { productId: number; onClose: () => void }) {
   const [name, setName] = useState(""); const [contact, setContact] = useState("");
@@ -22,10 +23,9 @@ function OrderModal({ productId, onClose }: { productId: number; onClose: () => 
       if (!data.success) throw new Error(data.message);
       const { orderId, productName, waNumber } = data.data;
 
-      // Pastikan 2 baris ini ada ✅
-      const productUrl = `${window.location.origin}/products/${productId}`;
+      const productUrl = `${window.location.origin}/product/${productId}`;
       const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
-      
+
       window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
       onClose();
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
@@ -65,10 +65,18 @@ export default function ProductDetailPage() {
   const [mainImgIdx, setMainImgIdx] = useState(0);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme") as "dark" | "light" | null;
     if (saved === "light") { setTheme("light"); document.body.classList.add("light-mode"); }
+  }, []);
+
+  // Load categories dari API
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data || []));
   }, []);
 
   useEffect(() => {
@@ -107,7 +115,7 @@ export default function ProductDetailPage() {
         <div className="container nav-content">
           <a href="/" className="nav-logo">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/logo.jpg" alt="DVINTAGES" className="header-logo"
+            <img src="https://wmikyjdtklhvdrsfkqdq.supabase.co/storage/v1/object/public/dvintages/assets/logo.jpg" alt="DVINTAGES" className="header-logo"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           </a>
           <ul className="nav-links">
@@ -115,8 +123,9 @@ export default function ProductDetailPage() {
             <li className="dropdown">
               <a href="javascript:void(0)" className="dropbtn">Products ▼</a>
               <div className="dropdown-content">
-                {["all", "Baju", "Celana", "Jacket", "Vest", "Sepatu", "Tas"].map((cat) => (
-                  <a key={cat} href={`/?category=${cat}`}>{cat === "all" ? "All" : cat}</a>
+                <a href="/?category=all">All</a>
+                {categories.map((cat) => (
+                  <a key={cat.id} href={`/?category=${encodeURIComponent(cat.name)}`}>{cat.name}</a>
                 ))}
               </div>
             </li>
@@ -216,7 +225,7 @@ const detailStyles = `
   .nav-links a:hover { color: var(--primary-color); }
   .dropdown { position: relative; }
   .dropdown-content { display: none; position: absolute; top: 120%; left: 50%; transform: translateX(-50%); background: var(--dropdown-bg); min-width: 200px; box-shadow: 0 12px 25px var(--shadow-color-strong); z-index: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
-  .dropdown-content a { color: var(--text-color-secondary); padding: 12px 20px; display: block; font-weight: 500; font-size: 1rem; }
+  .dropdown-content a { color: var(--text-color-secondary); padding: 12px 20px; display: block; font-weight: 500; font-size: 1rem; cursor: pointer; }
   .dropdown:hover .dropdown-content { display: block; }
   .social-icons { display: flex; gap: 15px; align-items: center; margin-left: 20px; }
   .social-icons a { color: var(--text-color-secondary); font-size: 1.3rem; transition: all 0.3s; padding: 8px; }

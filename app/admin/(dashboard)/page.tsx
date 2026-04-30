@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 
-type Tab = "add-product" | "products" | "orders" | "banners" | "whatsapp" | "sales-report";
+type Tab = "add-product" | "products" | "orders" | "banners" | "whatsapp" | "sales-report" | "categories";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Product {
@@ -17,6 +17,7 @@ interface Order {
 }
 interface Banner { id: number; image_url: string; title: string; description: string; }
 interface MonthlySale { sale_month: string; monthly_revenue: number; monthly_orders: number; }
+interface Category { id: number; name: string; }
 
 // ─── Notification ─────────────────────────────────────────────────────────────
 function useNotification() {
@@ -84,6 +85,12 @@ export default function AdminPage() {
     monthly_sales: MonthlySale[];
   } | null>(null);
 
+  // Categories state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+
   // ── Tab switching ──────────────────────────────────────────────────────────
   function switchTab(tab: Tab) {
     setActiveTab(tab);
@@ -93,6 +100,7 @@ export default function AdminPage() {
     else if (tab === "add-product") resetProductForm();
     else if (tab === "whatsapp") loadWaNumber();
     else if (tab === "sales-report") loadSalesReport();
+    else if (tab === "categories") loadCategories();
   }
 
   useEffect(() => { loadOrders(); }, []);
@@ -115,7 +123,7 @@ export default function AdminPage() {
 
   function resetProductForm() {
     setEditingProduct(null);
-    setProductForm({ name: "", description: "", price: "", inventory: "10", category: "Baju", status: "active" });
+    setProductForm({ name: "", description: "", price: "", inventory: "10", category: categories[0]?.name || "Baju", status: "active" });
     setRetainedImages([]);
     setNewImageFiles([]);
     setNewImagePreviews([]);
@@ -318,6 +326,58 @@ export default function AdminPage() {
     } catch (e: any) { showNotif(e.message, "error"); }
   }
 
+  // ── Categories ─────────────────────────────────────────────────────────────
+  async function loadCategories() {
+    try {
+      const data = await apiFetch("/api/categories");
+      setCategories(data.data);
+    } catch (e: any) { showNotif(e.message, "error"); }
+  }
+
+  async function addCategory() {
+    if (!newCategoryName.trim()) return showNotif("Nama kategori tidak boleh kosong!", "error");
+    try {
+      await apiFetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      });
+      showNotif("Kategori berhasil ditambahkan!");
+      setNewCategoryName("");
+      loadCategories();
+    } catch (e: any) { showNotif(e.message, "error"); }
+  }
+
+  async function saveEditCategory() {
+    if (!editingCategoryName.trim()) return showNotif("Nama kategori tidak boleh kosong!", "error");
+    try {
+      await apiFetch(`/api/categories/${editingCategory!.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editingCategoryName.trim() }),
+      });
+      showNotif("Kategori berhasil diupdate!");
+      setEditingCategory(null);
+      setEditingCategoryName("");
+      loadCategories();
+    } catch (e: any) { showNotif(e.message, "error"); }
+  }
+
+  function deleteCategory(c: Category) {
+    setConfirm({
+      title: "Hapus Kategori",
+      message: `Yakin ingin menghapus kategori "${c.name}"? Produk dengan kategori ini tidak akan terhapus.`,
+      onConfirm: async () => {
+        setConfirm(null);
+        try {
+          await apiFetch(`/api/categories/${c.id}`, { method: "DELETE" });
+          showNotif("Kategori berhasil dihapus!");
+          loadCategories();
+        } catch (e: any) { showNotif(e.message, "error"); }
+      },
+    });
+  }
+
   // ── Price formatting ───────────────────────────────────────────────────────
   function formatPrice(val: string) {
     const num = val.replace(/\D/g, "");
@@ -343,11 +403,12 @@ export default function AdminPage() {
             </button>
           </div>
           <nav className="nav-tabs">
-            {(["add-product", "products", "orders", "banners", "whatsapp", "sales-report"] as Tab[]).map((tab) => {
+            {(["add-product", "products", "orders", "banners", "whatsapp", "categories", "sales-report"] as Tab[]).map((tab) => {
               const labels: Record<Tab, string> = {
                 "add-product": "➕ Tambah Produk", products: "📦 Produk",
                 orders: "🧾 Pesanan", banners: "🖼️ Banner",
                 whatsapp: "📞 WhatsApp", "sales-report": "📈 Laporan",
+                categories: "🏷️ Kategori",
               };
               return (
                 <button key={tab} className={`nav-tab ${activeTab === tab ? "active" : ""}`}
@@ -389,12 +450,14 @@ export default function AdminPage() {
                   <label className="form-label">Kategori</label>
                   <select className="form-input" value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
-                    <option value="Baju">Baju</option>
-                    <option value="Celana">Celana</option>
-                    <option value="Jacket">Jacket</option>
-                    <option value="Vest">Vest</option>
-                    <option value="Sepatu">Sepatu</option>
-                    <option value="Tas">Tas</option>
+                    {categories.length > 0
+                      ? categories.map((c) => (
+                          <option key={c.id} value={c.name}>{c.name}</option>
+                        ))
+                      : ["Baju", "Celana", "Jacket", "Vest", "Sepatu", "Tas"].map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))
+                    }
                   </select>
                 </div>
                 <div className="form-group">
@@ -595,6 +658,69 @@ export default function AdminPage() {
               </div>
               <button className="btn-primary" onClick={saveWaNumber}>💾 Simpan Nomor</button>
             </section>
+          )}
+
+          {/* ── TAB: Categories ── */}
+          {activeTab === "categories" && (
+            <>
+              <section className="admin-form">
+                <h3 className="form-title">🏷️ Tambah Kategori</h3>
+                <div className="form-group" style={{ display: "flex", gap: "1rem", alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label">Nama Kategori</label>
+                    <input
+                      className="form-input"
+                      placeholder="Contoh: Hoodie"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCategory(); } }}
+                    />
+                  </div>
+                  <button className="btn-primary" onClick={addCategory}>➕ Tambah</button>
+                </div>
+              </section>
+
+              <h2 className="section-title">🏷️ Daftar Kategori</h2>
+              <div className="list-container">
+                {categories.length === 0 ? (
+                  <div className="empty-state">Belum ada kategori.</div>
+                ) : categories.map((c) => (
+                  <div key={c.id} className="list-item">
+                    <div style={{ width: 50, height: 50, borderRadius: 8, background: "#333", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>
+                      🏷️
+                    </div>
+                    <div className="list-info">
+                      {editingCategory?.id === c.id ? (
+                        <input
+                          className="form-input"
+                          value={editingCategoryName}
+                          onChange={(e) => setEditingCategoryName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEditCategory(); }}
+                          autoFocus
+                          style={{ padding: "0.4rem 0.6rem", fontSize: "0.95rem" }}
+                        />
+                      ) : (
+                        <strong>{c.name}</strong>
+                      )}
+                    </div>
+                    <div className="list-actions">
+                      {editingCategory?.id === c.id ? (
+                        <>
+                          <button className="btn-primary btn-sm" onClick={saveEditCategory}>💾</button>
+                          <button className="btn-primary btn-sm" style={{ background: "#4a5568" }}
+                            onClick={() => { setEditingCategory(null); setEditingCategoryName(""); }}>✕</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn-primary btn-sm" onClick={() => { setEditingCategory(c); setEditingCategoryName(c.name); }}>✏️</button>
+                          <button className="btn-danger btn-sm" onClick={() => deleteCategory(c)}>🗑️</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* ── TAB: Sales Report ── */}

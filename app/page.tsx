@@ -7,9 +7,13 @@ interface Product {
   image_url: string[]; status: string; inventory: number; category: string;
 }
 interface Banner { id: number; image_url: string; title: string; description: string; }
+interface Category { id: number; name: string; }
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar({ onCategoryChange }: { onCategoryChange: (cat: string) => void }) {
+function Navbar({ onCategoryChange, categories }: { 
+  onCategoryChange: (cat: string) => void;
+  categories: Category[];
+}) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [hidden, setHidden] = useState(false);
   const lastScroll = useRef(0);
@@ -46,9 +50,10 @@ function Navbar({ onCategoryChange }: { onCategoryChange: (cat: string) => void 
           <li className="dropdown">
             <a href="#" className="dropbtn">Products ▼</a>
             <div className="dropdown-content">
-              {["all", "Baju", "Celana", "Jacket", "Vest", "Sepatu", "Tas"].map((cat) => (
-                <a key={cat} onClick={() => onCategoryChange(cat)} style={{ cursor: "pointer" }}>
-                  {cat === "all" ? "All" : cat}
+              <a onClick={() => onCategoryChange("all")} style={{ cursor: "pointer" }}>All</a>
+              {categories.map((cat) => (
+                <a key={cat.id} onClick={() => onCategoryChange(cat.name)} style={{ cursor: "pointer" }}>
+                  {cat.name}
                 </a>
               ))}
             </div>
@@ -187,30 +192,30 @@ function OrderModal({ productId, onClose }: { productId: number; onClose: () => 
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-  try {
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ product_id: productId, customer_name: name, customer_contact: contact }),
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message);
-    const { orderId, productName, waNumber } = data.data;
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: productId, customer_name: name, customer_contact: contact }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      const { orderId, productName, waNumber } = data.data;
 
-    const productUrl = `${window.location.origin}/product/${productId}`;
-    const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
+      const productUrl = `${window.location.origin}/product/${productId}`;
+      const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
 
-    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
-    onClose();
-  } catch (e: any) {
-    setError(e.message);
-  } finally {
-    setLoading(false);
+      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
+      onClose();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   return (
     <div className="modal-overlay visible" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -242,9 +247,17 @@ function OrderModal({ productId, onClose }: { productId: number; onClose: () => 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [orderProductId, setOrderProductId] = useState<number | null>(null);
+
+  // Load categories sekali saat mount
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data || []));
+  }, []);
 
   useEffect(() => {
     fetch("/api/banners").then((r) => r.json()).then((d) => setBanners(d.data || []));
@@ -252,7 +265,10 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/products?category=${category}`)
+    const url = category === "all"
+      ? "/api/products"
+      : `/api/products?category=${encodeURIComponent(category)}`;
+    fetch(url)
       .then((r) => r.json())
       .then((d) => { setProducts(d.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -262,7 +278,7 @@ export default function HomePage() {
 
   return (
     <>
-      <Navbar onCategoryChange={setCategory} />
+      <Navbar onCategoryChange={setCategory} categories={categories} />
       <BannerCarousel banners={banners} />
 
       <main id="product-section" className="product-section container">
