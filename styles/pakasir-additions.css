@@ -1,0 +1,86 @@
+/* ============================================================================
+   Tambahan CSS untuk fitur Payment Gateway Pakasir
+   Tempel di bagian bawah file CSS detail produk (detailStyles) DAN
+   di file styles/store.css, supaya konsisten di kedua halaman.
+   Menggunakan CSS variable yang sama dengan tema dark/light yang sudah ada.
+============================================================================ */
+
+.modal-subtext { font-size: 0.9rem; color: var(--text-color-secondary); margin-bottom: 16px; text-align: center; }
+.form-error { color: #f56565; margin-bottom: 12px; font-size: 0.9rem; }
+
+textarea.form-input { resize: vertical; min-height: 70px; font-family: inherit; }
+
+/* ── Pilihan metode pemesanan (WA manual / Pakasir) ───────────────────── */
+.payment-choice-group { display: flex; flex-direction: column; gap: 10px; }
+.payment-choice {
+  display: flex; align-items: flex-start; gap: 10px;
+  border: 2px solid var(--border-color-strong); border-radius: 10px;
+  padding: 12px 14px; cursor: pointer; transition: all 0.2s;
+  background: var(--input-bg);
+}
+.payment-choice:hover { border-color: var(--primary-color); }
+.payment-choice.active { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-shadow); }
+.payment-choice input[type="radio"] { margin-top: 3px; accent-color: var(--primary-color); flex-shrink: 0; }
+.payment-choice div { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.payment-choice strong { font-size: 0.95rem; color: var(--text-color); }
+.payment-choice span { font-size: 0.8rem; color: var(--text-color-subtle); }
+
+/* ── Daftar channel pembayaran Pakasir (QRIS / VA) ─────────────────────── */
+.channel-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; margin-bottom: 16px; }
+.channel-item {
+  display: flex; align-items: center; gap: 10px;
+  border: 2px solid var(--border-color-strong); border-radius: 8px;
+  padding: 10px 12px; cursor: pointer; transition: all 0.2s;
+  background: var(--input-bg);
+}
+.channel-item:hover { border-color: var(--primary-color); }
+.channel-item.active { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-shadow); }
+.channel-item input[type="radio"] { accent-color: var(--primary-color); flex-shrink: 0; }
+.channel-item span { font-size: 0.9rem; color: var(--text-color); text-align: left; }
+
+/* ── Box QRIS ───────────────────────────────────────────────────────────── */
+.qris-box { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 16px; }
+.qris-image { width: 220px; height: 220px; border-radius: 10px; border: 2px solid var(--border-color-strong); background: #fff; padding: 8px; }
+
+/* ── Box Virtual Account ───────────────────────────────────────────────── */
+.va-box {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  border: 2px dashed var(--border-color-strong); border-radius: 10px;
+  padding: 18px; margin-bottom: 16px; background: var(--input-bg);
+}
+.va-label { font-size: 0.85rem; color: var(--text-color-subtle); text-transform: uppercase; letter-spacing: 0.5px; }
+.va-number { font-family: monospace; font-size: 1.4rem; font-weight: 700; color: var(--text-color); letter-spacing: 1px; word-break: break-all; text-align: center; }
+.copy-btn {
+  padding: 8px 18px; border-radius: 8px; border: 2px solid var(--primary-color);
+  background: transparent; color: var(--primary-color); font-weight: 700;
+  cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+}
+.copy-btn:hover { background: var(--primary-color); color: var(--text-on-primary); }
+
+/* ── Countdown & status menunggu ───────────────────────────────────────── */
+.countdown-text {
+  text-align: center; font-size: 0.9rem; color: var(--text-color);
+  margin-bottom: 14px; padding: 8px 12px; border-radius: 8px;
+  transition: all 0.3s;
+}
+.countdown-text.urgency-normal { background: transparent; }
+.countdown-text.urgency-warning { background: #f6ad5533; color: #c05621; font-weight: 600; }
+.countdown-text.urgency-critical {
+  background: #f5656533; color: #c53030; font-weight: 700;
+  animation: pulse-critical 1.5s ease-in-out infinite;
+}
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.payment-waiting-text { text-align: center; font-size: 0.85rem; color: var(--text-color-subtle); margin-bottom: 14px; }
+
+/* ── Hasil akhir (sukses / expired) ────────────────────────────────────── */
+.payment-result { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.payment-result-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 700; margin-bottom: 14px;
+}
+.payment-result-icon.success { background: #2f855a33; color: #2f855a; }
+.payment-result-icon.expired { background: #f5656533; color: #f56565; }

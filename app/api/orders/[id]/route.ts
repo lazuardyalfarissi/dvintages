@@ -25,6 +25,19 @@ export async function PATCH(
         id,
       ]);
 
+      // Jika dibatalkan dan pesanan ini pakai Pakasir, sinkronkan payment_status
+      // di DB lokal supaya admin tidak melihat status pembayaran yang
+      // membingungkan (mis. masih 'pending' padahal order sudah dibatalkan).
+      // Catatan: ini HANYA update DB lokal, tidak memanggil API cancel Pakasir.
+      if (status === "Dibatalkan") {
+        await conn.execute(
+          `UPDATE orders
+           SET payment_status = 'cancelled'
+           WHERE id = ? AND payment_method = 'pakasir' AND payment_status = 'pending'`,
+          [id]
+        );
+      }
+
       // Jika status 'Selesai', kurangi stok
       if (status === "Selesai") {
         const [items] = await conn.execute(
@@ -74,6 +87,8 @@ export async function DELETE(
     await conn.beginTransaction();
 
     try {
+      // order_payments punya FK ON DELETE CASCADE ke orders, jadi otomatis
+      // ikut terhapus saat order dihapus — tidak perlu DELETE manual di sini.
       await conn.execute("DELETE FROM order_items WHERE order_id = ?", [id]);
       const [result] = await conn.execute("DELETE FROM orders WHERE id = ?", [id]);
 

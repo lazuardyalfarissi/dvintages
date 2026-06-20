@@ -1,61 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
+import OrderModal from "@/components/OrderModal";
 
 interface Product {
   id: number; name: string; description: string; price: number;
   image_url: string[]; status: string; inventory: number; category: string;
 }
 interface Category { id: number; name: string; }
-
-function OrderModal({ productId, onClose }: { productId: number; onClose: () => void }) {
-  const [name, setName] = useState(""); const [contact, setContact] = useState("");
-  const [loading, setLoading] = useState(false); const [error, setError] = useState("");
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault(); setLoading(true); setError("");
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId, customer_name: name, customer_contact: contact }),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-      const { orderId, productName, waNumber } = data.data;
-
-      const productUrl = `${window.location.origin}/product/${productId}`;
-      const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
-
-      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
-      onClose();
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
-  }
-
-  return (
-    <div className="modal-overlay visible" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-content">
-        <h3>Lengkapi Data Pesanan</h3>
-        <form className="order-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Nama Lengkap</label>
-            <input className="form-input" required placeholder="Nama kamu" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Nomor WhatsApp</label>
-            <input className="form-input" type="tel" required placeholder="08123456xxxx" value={contact} onChange={(e) => setContact(e.target.value)} />
-          </div>
-          {error && <p style={{ color: "#f56565", marginBottom: 12 }}>{error}</p>}
-          <div className="modal-buttons">
-            <button type="button" className="modal-btn-cancel" onClick={onClose}>Batal</button>
-            <button type="submit" className="modal-btn-submit" disabled={loading}>
-              {loading ? "Memproses..." : "Lanjut ke WhatsApp"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -442,10 +394,10 @@ const detailStyles = `
   .footer-social a { color: var(--text-color-subtle); font-size: 1.4rem; margin: 0 10px; transition: all 0.3s; display: inline-block; }
   .footer-social a:hover { color: var(--primary-color); transform: translateY(-3px); }
 
-  /* ===== MODAL ===== */
+  /* ===== MODAL (base) ===== */
   .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.4s; padding: 16px; }
   .modal-overlay.visible { opacity: 1; pointer-events: auto; }
-  .modal-content { background: var(--modal-bg); padding: 30px 24px; border-radius: 15px; max-width: 450px; width: 100%; text-align: center; transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.18,0.89,0.32,1.28); box-shadow: 0 20px 50px var(--shadow-color-strong); border: 2px solid var(--border-color-strong); }
+  .modal-content { background: var(--modal-bg); padding: 30px 24px; border-radius: 15px; max-width: 450px; width: 100%; text-align: center; transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.18,0.89,0.32,1.28); box-shadow: 0 20px 50px var(--shadow-color-strong); border: 2px solid var(--border-color-strong); max-height: 90vh; overflow-y: auto; }
   .modal-overlay.visible .modal-content { transform: scale(1); }
   .modal-content h3 { font-family: 'Anton', sans-serif; text-transform: uppercase; font-size: 1.6rem; margin-bottom: 24px; }
   .order-form { text-align: left; }

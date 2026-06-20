@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import "@/styles/store.css";
+import OrderModal from "@/components/OrderModal";
 
 interface Product {
   id: number; name: string; description: string; price: number;
@@ -179,65 +180,6 @@ function ProductCard({ p, onOrder }: { p: Product; onOrder: (id: number) => void
         <button className="order-btn" disabled={isSoldOut} onClick={() => onOrder(p.id)}>
           {isSoldOut ? "Stok Habis" : "Pesan Sekarang"}
         </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Order Modal ──────────────────────────────────────────────────────────────
-function OrderModal({ productId, onClose }: { productId: number; onClose: () => void }) {
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId, customer_name: name, customer_contact: contact }),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-      const { orderId, productName, waNumber } = data.data;
-
-      const productUrl = `${window.location.origin}/product/${productId}`;
-      const msg = `Halo, saya sudah membuat pesanan #${orderId}.\n\nNama: ${name}\nProduk: ${productName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
-
-      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
-      onClose();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="modal-overlay visible" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-content">
-        <h3>Lengkapi Data Pesanan</h3>
-        <form className="order-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Nama Lengkap</label>
-            <input className="form-input" required placeholder="Nama kamu" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Nomor WhatsApp</label>
-            <input className="form-input" type="tel" required placeholder="08123456xxxx" value={contact} onChange={(e) => setContact(e.target.value)} />
-          </div>
-          {error && <p style={{ color: "#f56565", marginBottom: 12 }}>{error}</p>}
-          <div className="modal-buttons">
-            <button type="button" className="modal-btn-cancel" onClick={onClose}>Batal</button>
-            <button type="submit" className="modal-btn-submit" disabled={loading}>
-              {loading ? "Memproses..." : "Lanjut ke WhatsApp"}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

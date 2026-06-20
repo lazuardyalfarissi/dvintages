@@ -11,7 +11,9 @@ export async function GET() {
 
   try {
     const [orders] = await pool.execute(
-      "SELECT id, customer_name, customer_contact, total_price, order_status, created_at FROM orders ORDER BY created_at DESC"
+      `SELECT id, customer_name, customer_contact, customer_address, total_price,
+              payment_method, payment_status, order_status, created_at
+       FROM orders ORDER BY created_at DESC`
     );
 
     // Ambil order_items untuk setiap pesanan
@@ -45,14 +47,25 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { product_id, customer_name, customer_contact } = body;
+    const {
+      product_id,
+      customer_name,
+      customer_contact,
+      customer_address,
+      payment_method, // 'wa_manual' | 'pakasir'
+    } = body;
 
-    if (!product_id || !customer_name || !customer_contact) {
+    if (!product_id || !customer_name || !customer_contact || !customer_address) {
       return NextResponse.json(
         { success: false, message: "Data pesanan tidak lengkap" },
         { status: 400 }
       );
     }
+
+    const method = payment_method === "pakasir" ? "pakasir" : "wa_manual";
+    // wa_manual -> pembayaran diatur manual di luar sistem (chat WA)
+    // pakasir   -> menunggu transaksi dibuat lewat /api/payment/create
+    const initialPaymentStatus = method === "pakasir" ? "pending" : "not_required";
 
     const conn = await pool.getConnection();
     await conn.beginTransaction();
@@ -75,8 +88,18 @@ export async function POST(req: NextRequest) {
 
       // Buat pesanan
       const [orderResult] = await conn.execute(
-        "INSERT INTO orders (customer_name, customer_contact, total_price, order_status, created_at) VALUES (?, ?, ?, 'Pending', NOW())",
-        [customer_name, customer_contact, product.price]
+        `INSERT INTO orders
+          (customer_name, customer_contact, customer_address, total_price,
+           payment_method, payment_status, order_status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())`,
+        [
+          customer_name,
+          customer_contact,
+          customer_address,
+          product.price,
+          method,
+          initialPaymentStatus,
+        ]
       );
       const orderId = (orderResult as any).insertId;
 
@@ -86,7 +109,8 @@ export async function POST(req: NextRequest) {
         [orderId, product_id, product.name, product.price]
       );
 
-      // Ambil nomor WA admin
+      // Ambil nomor WA admin (tetap dibutuhkan untuk opsi wa_manual,
+      // dan sebagai fallback kontak di opsi pakasir)
       const [settingRows] = await conn.execute(
         "SELECT setting_value FROM settings WHERE setting_key = 'whatsapp_number'",
         []
@@ -99,7 +123,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "Pesanan berhasil dibuat",
-        data: { orderId, productName: product.name, waNumber },
+        data: {
+          orderId,
+          productName: product.name,
+          price: Number(product.price),
+          waNumber,
+          paymentMethod: method,
+        },
       });
     } catch (err) {
       await conn.rollback();
