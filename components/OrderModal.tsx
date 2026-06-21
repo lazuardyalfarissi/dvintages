@@ -11,6 +11,21 @@ interface OrderModalProps {
   onClose: () => void;
 }
 
+interface CityOption {
+  id: number;
+  label: string;
+  city: string;
+  province: string;
+}
+
+interface ShippingOption {
+  courier: string;
+  service: string;
+  description: string;
+  cost: number;
+  etd: string;
+}
+
 export default function OrderModal({ productId, onClose }: OrderModalProps) {
   const [step, setStep] = useState<Step>("form");
 
@@ -19,6 +34,20 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
   const [paymentChoice, setPaymentChoice] = useState<"wa_manual" | "pakasir">("wa_manual");
+
+  // ── Ongkir state ──────────────────────────────────────────────────────
+  const [citySearch, setCitySearch] = useState("");
+  const [cityOptions, setCityOptions] = useState<CityOption[]>([]);
+  const [cityLoading, setCityLoading] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<CityOption | null>(null);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const cityDebounce = useRef<NodeJS.Timeout | null>(null);
+  const cityBoxRef = useRef<HTMLDivElement>(null);
+
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState("");
+  const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,9 +58,15 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
   const [price, setPrice] = useState(0);
   const [waNumber, setWaNumber] = useState("");
 
+  // ── Detail produk (harga, nama) — diambil saat modal dibuka ─────────────
+  const [productLoading, setProductLoading] = useState(true);
+  const [productError, setProductError] = useState("");
+
   // Pakasir payment state
   const [channel, setChannel] = useState<PakasirMethodClient>("qris");
   const [paymentNumber, setPaymentNumber] = useState("");
+  const [paymentFee, setPaymentFee] = useState(0);
+  const [baseAmount, setBaseAmount] = useState(0);
   const [totalPayment, setTotalPayment] = useState(0);
   const [expiredAt, setExpiredAt] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("pending");
@@ -43,9 +78,119 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
   const [timeLeft, setTimeLeft] = useState("");
   const [urgency, setUrgency] = useState<"normal" | "warning" | "critical">("normal");
 
+  // ── Ambil detail produk (harga, nama) saat modal dibuka ─────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProduct() {
+      setProductLoading(true);
+      setProductError("");
+      try {
+        const res = await fetch(`/api/products/${productId}`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message);
+        if (!cancelled) {
+          setPrice(data.data.price);
+          setProductName(data.data.name);
+        }
+      } catch (e: any) {
+        if (!cancelled) setProductError(e.message || "Gagal memuat data produk");
+      } finally {
+        if (!cancelled) setProductLoading(false);
+      }
+    }
+
+    loadProduct();
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
+
+  // ── Cari kota tujuan (debounced) ───────────────────────────────────────
+  useEffect(() => {
+    if (cityDebounce.current) clearTimeout(cityDebounce.current);
+
+    if (!citySearch || citySearch.length < 3 || selectedCity?.label === citySearch) {
+      setCityOptions([]);
+      return;
+    }
+
+    cityDebounce.current = setTimeout(async () => {
+      setCityLoading(true);
+      try {
+        const res = await fetch(`/api/shipping/search-city?q=${encodeURIComponent(citySearch)}`);
+        const data = await res.json();
+        setCityOptions(data.success ? data.data : []);
+      } catch {
+        setCityOptions([]);
+      } finally {
+        setCityLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      if (cityDebounce.current) clearTimeout(cityDebounce.current);
+    };
+  }, [citySearch, selectedCity]);
+
+  // Tutup dropdown kalau klik di luar
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (cityBoxRef.current && !cityBoxRef.current.contains(e.target as Node)) {
+        setShowCityDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function handlePickCity(city: CityOption) {
+    setSelectedCity(city);
+    setCitySearch(city.label);
+    setShowCityDropdown(false);
+    setSelectedShipping(null);
+    setShippingOptions([]);
+  }
+
+  // ── Hitung ongkir setelah kota dipilih ─────────────────────────────────
+  async function handleCalculateShipping() {
+    if (!selectedCity) return;
+    setShippingLoading(true);
+    setShippingError("");
+    setShippingOptions([]);
+    setSelectedShipping(null);
+    try {
+      const res = await fetch("/api/shipping/cost", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destination_id: selectedCity.id, qty: 1 }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      if (!data.data.length) throw new Error("Tidak ada layanan kurir untuk kota ini");
+      setShippingOptions(data.data);
+    } catch (e: any) {
+      setShippingError(e.message);
+    } finally {
+      setShippingLoading(false);
+    }
+  }
+
+  const orderTotal = price + (selectedShipping?.cost || 0);
+
   // ── Step 1: submit form ────────────────────────────────────────────────
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!selectedCity) {
+      setError("Pilih kota tujuan terlebih dahulu");
+      return;
+    }
+    if (!selectedShipping) {
+      setError("Pilih layanan kurir terlebih dahulu");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -58,6 +203,12 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
           customer_contact: contact,
           customer_address: address,
           payment_method: paymentChoice,
+          shipping_destination_id: selectedCity.id,
+          shipping_destination_label: selectedCity.label,
+          shipping_courier: selectedShipping.courier,
+          shipping_service: selectedShipping.service,
+          shipping_cost: selectedShipping.cost,
+          shipping_etd: selectedShipping.etd,
         }),
       });
       const data = await res.json();
@@ -71,7 +222,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
 
       if (paymentChoice === "wa_manual") {
         const productUrl = `${window.location.origin}/product/${productId}`;
-        const msg = `Halo, saya sudah membuat pesanan #${newOrderId}.\n\nNama: ${name}\nAlamat: ${address}\nProduk: ${pName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
+        const msg = `Halo, saya sudah membuat pesanan #${newOrderId}.\n\nNama: ${name}\nAlamat: ${address}\nTujuan: ${selectedCity.label}\nKurir: ${selectedShipping.courier} - ${selectedShipping.service} (Rp ${new Intl.NumberFormat("id-ID").format(selectedShipping.cost)})\nProduk: ${pName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
         window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank");
         setStep("success");
       } else {
@@ -99,6 +250,8 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
       if (!data.success) throw new Error(data.message);
 
       setPaymentNumber(data.data.paymentNumber);
+      setPaymentFee(data.data.fee);
+      setBaseAmount(data.data.baseAmount);
       setTotalPayment(data.data.totalPayment);
       setExpiredAt(data.data.expiredAt);
       setPaymentStatus("pending");
@@ -244,6 +397,101 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
                   onChange={(e) => setAddress(e.target.value)}
                 />
               </div>
+
+              {/* ── Kota tujuan (autocomplete) ──────────────────────── */}
+              <div className="form-group">
+                <label className="form-label">Kota / Kecamatan Tujuan</label>
+                <div className="city-autocomplete" ref={cityBoxRef}>
+                  <input
+                    className="form-input"
+                    required
+                    placeholder="Ketik nama kota/kecamatan, mis. Kebayoran"
+                    value={citySearch}
+                    onChange={(e) => {
+                      setCitySearch(e.target.value);
+                      setSelectedCity(null);
+                      setShowCityDropdown(true);
+                      setSelectedShipping(null);
+                      setShippingOptions([]);
+                    }}
+                    onFocus={() => setShowCityDropdown(true)}
+                  />
+                  {showCityDropdown && citySearch.length >= 3 && (
+                    <div className="city-dropdown">
+                      {cityLoading ? (
+                        <div className="city-dropdown-empty">Mencari...</div>
+                      ) : cityOptions.length === 0 ? (
+                        <div className="city-dropdown-empty">Kota tidak ditemukan</div>
+                      ) : (
+                        cityOptions.map((c) => (
+                          <div
+                            key={c.id}
+                            className="city-dropdown-item"
+                            onClick={() => handlePickCity(c)}
+                          >
+                            {c.label}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Tombol & hasil hitung ongkir ─────────────────────── */}
+              {selectedCity && (
+                <div className="form-group">
+                  <button
+                    type="button"
+                    className="shipping-calc-btn"
+                    onClick={handleCalculateShipping}
+                    disabled={shippingLoading}
+                  >
+                    {shippingLoading ? "Menghitung ongkir..." : "Cek Ongkos Kirim"}
+                  </button>
+
+                  {shippingError && <p className="form-error">{shippingError}</p>}
+
+                  {shippingOptions.length > 0 && (
+                    <div className="shipping-options">
+                      {shippingOptions.map((opt, i) => (
+                        <label
+                          key={`${opt.courier}-${opt.service}-${i}`}
+                          className={`shipping-option${
+                            selectedShipping?.courier === opt.courier &&
+                            selectedShipping?.service === opt.service
+                              ? " active"
+                              : ""
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="shipping_option"
+                            checked={
+                              selectedShipping?.courier === opt.courier &&
+                              selectedShipping?.service === opt.service
+                            }
+                            onChange={() => setSelectedShipping(opt)}
+                          />
+                          <div>
+                            <strong>{opt.courier} - {opt.service}</strong>
+                            <span>
+                              {opt.description}
+                              {opt.etd && opt.etd.trim() !== "" && (
+                                <> &middot; Estimasi {opt.etd}{!/hari|day/i.test(opt.etd) ? " hari" : ""}</>
+                              )}
+                            </span>
+                          </div>
+                          <div className="shipping-option-cost">
+                            Rp {new Intl.NumberFormat("id-ID").format(opt.cost)}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">Metode Pemesanan</label>
                 <div className="payment-choice-group">
@@ -268,19 +516,58 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
                     />
                     <div>
                       <strong>Bayar Online</strong>
-                      <span>QRIS / Virtual Account, otomatis terverifikasi</span>
+                      <span>QRIS / Virtual Account, otomatis terverifikasi. Ada biaya admin dari payment gateway.</span>
                     </div>
                   </label>
                 </div>
               </div>
+
+              {/* ── Ringkasan biaya ──────────────────────────────────── */}
+              {selectedShipping && (
+                <div className="order-summary">
+                  <div className="order-summary-row">
+                    <span>Harga produk</span>
+                    <span>
+                      {productLoading
+                        ? "Memuat..."
+                        : `Rp ${new Intl.NumberFormat("id-ID").format(price)}`}
+                    </span>
+                  </div>
+                  <div className="order-summary-row">
+                    <span>Ongkos kirim ({selectedShipping.courier})</span>
+                    <span>Rp {new Intl.NumberFormat("id-ID").format(selectedShipping.cost)}</span>
+                  </div>
+                  {paymentChoice === "pakasir" && (
+                    <p className="order-summary-note">
+                      *Biaya admin payment gateway akan ditambahkan dan ditampilkan di langkah berikutnya
+                    </p>
+                  )}
+                  <div className="order-summary-row total">
+                    <span>{paymentChoice === "pakasir" ? "Subtotal" : "Total"}</span>
+                    <span>
+                      {productLoading
+                        ? "Memuat..."
+                        : `Rp ${new Intl.NumberFormat("id-ID").format(orderTotal)}`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {productError && <p className="form-error">{productError}</p>}
               {error && <p className="form-error">{error}</p>}
               <div className="modal-buttons">
                 <button type="button" className="modal-btn-cancel" onClick={onClose}>
                   Batal
                 </button>
-                <button type="submit" className="modal-btn-submit" disabled={loading}>
+                <button
+                  type="submit"
+                  className="modal-btn-submit"
+                  disabled={loading || productLoading || !!productError}
+                >
                   {loading
                     ? "Memproses..."
+                    : productLoading
+                    ? "Memuat produk..."
                     : paymentChoice === "wa_manual"
                     ? "Lanjut ke WhatsApp"
                     : "Lanjutkan"}
@@ -295,7 +582,9 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
           <>
             <h3>Pilih Metode Pembayaran</h3>
             <p className="modal-subtext">
-              Total: <strong>Rp {new Intl.NumberFormat("id-ID").format(price)}</strong>
+              Subtotal: <strong>Rp {new Intl.NumberFormat("id-ID").format(price + (selectedShipping?.cost || 0))}</strong>
+              <br />
+              <span style={{ fontSize: "0.8rem" }}>+ biaya admin sesuai metode yang dipilih</span>
             </p>
             <div className="channel-list">
               {(Object.keys(PAKASIR_PAYMENT_LABELS_CLIENT) as PakasirMethodClient[]).map((m) => (
@@ -377,10 +666,22 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
             ) : (
               <>
                 <h3>Selesaikan Pembayaran</h3>
-                <p className="modal-subtext">
-                  Pesanan #{orderId} &middot; Total{" "}
-                  <strong>Rp {new Intl.NumberFormat("id-ID").format(totalPayment)}</strong>
-                </p>
+
+                {/* ── Rincian biaya: harga + ongkir + fee Pakasir ─────── */}
+                <div className="order-summary">
+                  <div className="order-summary-row">
+                    <span>Harga produk + ongkir</span>
+                    <span>Rp {new Intl.NumberFormat("id-ID").format(baseAmount)}</span>
+                  </div>
+                  <div className="order-summary-row">
+                    <span>Biaya admin payment gateway</span>
+                    <span>Rp {new Intl.NumberFormat("id-ID").format(paymentFee)}</span>
+                  </div>
+                  <div className="order-summary-row total">
+                    <span>Total Bayar</span>
+                    <span>Rp {new Intl.NumberFormat("id-ID").format(totalPayment)}</span>
+                  </div>
+                </div>
 
                 {timeLeft && (
                   <p className={`countdown-text urgency-${urgency}`}>
