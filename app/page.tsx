@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import "@/styles/store.css";
-import OrderModal from "@/components/OrderModal";
+import { useCart } from "@/context/CartContext";
+import CartDrawer from "@/components/CartDrawer";
+import CheckoutModal from "@/components/CheckoutModal";
 
 interface Product {
   id: number; name: string; description: string; price: number;
@@ -11,9 +13,11 @@ interface Banner { id: number; image_url: string; title: string; description: st
 interface Category { id: number; name: string; }
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar({ onCategoryChange, categories }: { 
+function Navbar({ onCategoryChange, categories, onCartOpen, totalItems }: {
   onCategoryChange: (cat: string) => void;
   categories: Category[];
+  onCartOpen: () => void;
+  totalItems: number;
 }) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [hidden, setHidden] = useState(false);
@@ -43,7 +47,8 @@ function Navbar({ onCategoryChange, categories }: {
       <div className="container nav-content">
         <a href="/" className="nav-logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://wmikyjdtklhvdrsfkqdq.supabase.co/storage/v1/object/public/dvintages/assets/logo.jpg" alt="DVINTAGES" className="header-logo"
+          <img src="https://wmikyjdtklhvdrsfkqdq.supabase.co/storage/v1/object/public/dvintages/assets/logo.jpg"
+            alt="DVINTAGES" className="header-logo"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
         </a>
         <ul className="nav-links">
@@ -60,19 +65,23 @@ function Navbar({ onCategoryChange, categories }: {
             </div>
           </li>
           <div className="social-icons">
-            <a href="https://instagram.com/dvintagesss" target="_blank" rel="noreferrer" className="instagram" title="Instagram">
+            <a href="https://instagram.com/dvintagesss" target="_blank" rel="noreferrer" className="instagram">
               <i className="fab fa-instagram" />
             </a>
-            <a href="https://tiktok.com/@dvintages" target="_blank" rel="noreferrer" className="tiktok" title="TikTok">
+            <a href="https://tiktok.com/@dvintages" target="_blank" rel="noreferrer" className="tiktok">
               <i className="fab fa-tiktok" />
             </a>
-            <a href="https://wa.me/6285774497521" target="_blank" rel="noreferrer" className="whatsapp" title="WhatsApp">
+            <a href="https://wa.me/6285774497521" target="_blank" rel="noreferrer" className="whatsapp">
               <i className="fab fa-whatsapp" />
             </a>
           </div>
           <button className="theme-toggle-btn" onClick={toggleTheme} title="Ganti tema">
             <i className="fas fa-sun" />
             <i className="fas fa-moon" />
+          </button>
+          <button className="cart-nav-btn" onClick={onCartOpen}>
+            🛒
+            {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
           </button>
         </ul>
       </div>
@@ -91,7 +100,10 @@ function BannerCarousel({ banners }: { banners: Banner[] }) {
       timerRef.current = setInterval(() => setIdx((i) => (i + 1) % banners.length), 5000);
   }
 
-  useEffect(() => { resetTimer(); return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, [banners.length]);
+  useEffect(() => {
+    resetTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [banners.length]);
 
   function scrollToProducts(e: React.MouseEvent) {
     e.preventDefault();
@@ -137,10 +149,20 @@ function BannerCarousel({ banners }: { banners: Banner[] }) {
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
-function ProductCard({ p, onOrder }: { p: Product; onOrder: (id: number) => void }) {
+function ProductCard({ p, onAddToCart }: {
+  p: Product;
+  onAddToCart: (item: { id: number; name: string; price: number; image_url: string }) => void;
+}) {
   const [imgIdx, setImgIdx] = useState(0);
+  const [added, setAdded] = useState(false);
   const isSoldOut = p.status === "sold_out" || (p.status !== "inactive" && p.inventory <= 0);
   const images = p.image_url.length > 0 ? p.image_url : ["https://placehold.co/1080x1440/222/f0f0f0?text=DVINTAGES"];
+
+  function handleAdd() {
+    onAddToCart({ id: p.id, name: p.name, price: p.price, image_url: images[0] });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
 
   return (
     <div className="product-card">
@@ -177,8 +199,8 @@ function ProductCard({ p, onOrder }: { p: Product; onOrder: (id: number) => void
         <div className="product-price">Rp {new Intl.NumberFormat("id-ID").format(p.price)}</div>
         {p.description && <div className="product-description">{p.description}</div>}
         <div className="product-stock">Stok: {p.inventory}</div>
-        <button className="order-btn" disabled={isSoldOut} onClick={() => onOrder(p.id)}>
-          {isSoldOut ? "Stok Habis" : "Pesan Sekarang"}
+        <button className="order-btn" disabled={isSoldOut} onClick={handleAdd}>
+          {isSoldOut ? "Stok Habis" : added ? "✅ Ditambahkan!" : "🛒 Tambah ke Keranjang"}
         </button>
       </div>
     </div>
@@ -192,13 +214,13 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [orderProductId, setOrderProductId] = useState<number | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  // Load categories sekali saat mount
+  const { addItem, totalItems } = useCart();
+
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => setCategories(d.data || []));
+    fetch("/api/categories").then((r) => r.json()).then((d) => setCategories(d.data || []));
   }, []);
 
   useEffect(() => {
@@ -216,11 +238,22 @@ export default function HomePage() {
       .catch(() => setLoading(false));
   }, [category]);
 
+  function handleAddToCart(item: { id: number; name: string; price: number; image_url: string }) {
+    addItem(item);
+    setCartOpen(true);
+  }
+
   const title = category === "all" ? "All Products" : category;
 
   return (
     <>
-      <Navbar onCategoryChange={setCategory} categories={categories} />
+      <style>{cartNavStyles}</style>
+      <Navbar
+        onCategoryChange={setCategory}
+        categories={categories}
+        onCartOpen={() => setCartOpen(true)}
+        totalItems={totalItems}
+      />
       <BannerCarousel banners={banners} />
 
       <main id="product-section" className="product-section container">
@@ -232,7 +265,7 @@ export default function HomePage() {
             <div className="empty-state">📦 Belum ada produk di kategori ini.</div>
           ) : (
             products.map((p) => (
-              <ProductCard key={p.id} p={p} onOrder={setOrderProductId} />
+              <ProductCard key={p.id} p={p} onAddToCart={handleAddToCart} />
             ))
           )}
         </div>
@@ -250,9 +283,17 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {orderProductId !== null && (
-        <OrderModal productId={orderProductId} onClose={() => setOrderProductId(null)} />
-      )}
+      <CartDrawer
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }}
+      />
+      {checkoutOpen && <CheckoutModal onClose={() => setCheckoutOpen(false)} />}
     </>
   );
 }
+
+const cartNavStyles = `
+  .cart-nav-btn { position: relative; background: transparent; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; }
+  .cart-badge { position: absolute; top: -4px; right: -4px; background: #e53e3e; color: #fff; font-size: 0.65rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+`;

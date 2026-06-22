@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getPakasirTransactionDetail } from "@/lib/pakasir";
+import { sendPaymentConfirmedEmail } from "@/lib/email";
 
 /**
  * POST /api/payment/webhook
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
 
     // Pastikan order ini memang ada & memang pakai metode pakasir
     const [rows] = await pool.execute(
-      `SELECT id, total_price, payment_method FROM orders WHERE id = ?`,
+      `SELECT id, total_price, payment_method, customer_name, customer_email
+       FROM orders WHERE id = ?`,
       [order_id]
     );
     const order = (rows as any[])[0];
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (detail.status === "completed") {
+      // Update status di DB
       await pool.execute(
         `UPDATE order_payments SET status = 'completed', completed_at = ? WHERE order_id = ?`,
         [detail.completed_at ?? new Date(), order_id]
@@ -68,6 +71,17 @@ export async function POST(req: NextRequest) {
       await pool.execute(
         `UPDATE orders SET payment_status = 'paid' WHERE id = ?`,
         [order_id]
+      );
+
+      // Kirim email konfirmasi pembayaran ke customer
+      // fire-and-forget — jangan sampai gagal kirim email bikin webhook error
+      sendPaymentConfirmedEmail({
+        orderId: order.id,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
+        grandTotal: Number(order.total_price),
+      }).catch((err) =>
+        console.error("[webhook] Gagal kirim email konfirmasi:", err)
       );
     }
 
