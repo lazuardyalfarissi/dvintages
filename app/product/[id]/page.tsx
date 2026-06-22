@@ -227,8 +227,19 @@ export default function ProductDetailPage() {
       </header>
 
       <main className="container product-detail-section">
-        {loading ? (
-          <div className="loading-container">⏳ Memuat detail produk...</div>
+       {loading ? (
+  <div className="product-detail-grid skeleton-detail">
+    <div className="skeleton-detail-image" />
+    <div className="product-detail-info">
+      <div className="skeleton-line-d w70" />
+      <div className="skeleton-line-d w40" />
+      <div className="skeleton-line-d w30" />
+      <div className="skeleton-line-d w90" />
+      <div className="skeleton-line-d w80" />
+      <div className="skeleton-line-d w60" />
+      <div className="skeleton-btn-d" />
+    </div>
+  </div>
         ) : error ? (
           <div className="error-container">❌ {error}</div>
         ) : product ? (
@@ -405,4 +416,16 @@ const detailStyles = `
     .modal-buttons { flex-direction: column; }
     .modal-buttons button { width: 100%; }
   }
+  @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  .skeleton-detail { pointer-events: none; }
+  .skeleton-detail-image, .skeleton-line-d, .skeleton-btn-d { background: linear-gradient(90deg, var(--border-color) 25%, var(--card-bg) 50%, var(--border-color) 75%); background-size: 400px 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; }
+  .skeleton-detail-image { width: 100%; aspect-ratio: 3 / 4; border-radius: 12px 12px 0 0; }
+  .skeleton-line-d { height: 16px; margin-bottom: 16px; }
+  .skeleton-line-d.w70 { width: 70%; height: 36px; margin-bottom: 20px; }
+  .skeleton-line-d.w40 { width: 40%; height: 28px; }
+  .skeleton-line-d.w30 { width: 30%; }
+  .skeleton-line-d.w90 { width: 90%; }
+  .skeleton-line-d.w80 { width: 80%; }
+  .skeleton-line-d.w60 { width: 60%; }
+  .skeleton-btn-d { height: 52px; width: 100%; margin-top: auto; border-radius: 10px; }
 `;
