@@ -195,9 +195,12 @@ export default function ProductDetailPage() {
         <div className="container nav-content">
           <a href="/" className="nav-logo">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="https://wmikyjdtklhvdrsfkqdq.supabase.co/storage/v1/object/public/dvintages/assets/logo.jpg"
-              alt="DVINTAGES" className="header-logo"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            <img
+              src="https://wmikyjdtklhvdrsfkqdq.supabase.co/storage/v1/object/public/dvintages/assets/logo.jpg"
+              alt="DVINTAGES"
+              className="header-logo"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
           </a>
           <ul className="nav-links">
             <li><a href="/">Home</a></li>
@@ -226,80 +229,105 @@ export default function ProductDetailPage() {
         </div>
       </header>
 
-      <main className="container product-detail-section">
-       {loading ? (
-  <div className="product-detail-grid skeleton-detail">
-    <div className="skeleton-detail-image" />
-    <div className="product-detail-info">
-      <div className="skeleton-line-d w70" />
-      <div className="skeleton-line-d w40" />
-      <div className="skeleton-line-d w30" />
-      <div className="skeleton-line-d w90" />
-      <div className="skeleton-line-d w80" />
-      <div className="skeleton-line-d w60" />
-      <div className="skeleton-btn-d" />
-    </div>
-  </div>
-        ) : error ? (
-          <div className="error-container">❌ {error}</div>
-        ) : product ? (
-          <div className="product-detail-grid">
-            {/* Image Gallery */}
-            <div className="product-detail-image-gallery">
-              {isSoldOut && <div className="product-detail-sold-out">Sold out</div>}
-              <div className="main-product-image-wrapper" ref={wrapperRef}
-                onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseEnd} onMouseLeave={handleMouseEnd}
-                onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={images[mainImgIdx]} alt={product.name} className="main-product-image"
-                  style={{
-                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                    transformOrigin: zoomOrigin,
-                    cursor: zoom > 1 ? "grab" : "default",
-                    transition: isDragging ? "none" : "transform 0.2s ease",
-                  }}
-                  onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/1080x1440/222/f0f0f0?text=Error"; }}
-                  draggable={false}
-                />
+      <main className="product-detail-section">
+        <div className="container">
+          {loading ? (
+            <div className="product-detail-grid skeleton-detail">
+              <div className="product-detail-image-gallery">
+                <div className="skeleton-detail-image" />
+              </div>
+              <div className="product-detail-info">
+                <div className="skeleton-line-d w70" />
+                <div className="skeleton-line-d w40" />
+                <div className="skeleton-line-d w30" />
+                <div className="skeleton-line-d w90" />
+                <div className="skeleton-line-d w80" />
+                <div className="skeleton-line-d w60" />
+                <div className="skeleton-btn-d" />
+              </div>
+            </div>
+          ) : error ? (
+            <div className="error-container">❌ {error}</div>
+          ) : product ? (
+            <div className="product-detail-grid">
+              {/* Image Gallery */}
+              <div className="product-detail-image-gallery">
+                {isSoldOut && <div className="product-detail-sold-out">Sold out</div>}
+                <div
+                  className="main-product-image-wrapper"
+                  ref={wrapperRef}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseEnd}
+                  onMouseLeave={handleMouseEnd}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={images[mainImgIdx]}
+                    alt={product.name}
+                    className="main-product-image"
+                    style={{
+                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transformOrigin: zoomOrigin,
+                      cursor: zoom > 1 ? "grab" : "default",
+                      transition: isDragging ? "none" : "transform 0.2s ease",
+                    }}
+                    onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/1080x1440/222/f0f0f0?text=Error"; }}
+                    draggable={false}
+                  />
+                  {images.length > 1 && (
+                    <div className="swipe-dots">
+                      {images.map((_, i) => (
+                        <span key={i} className={`swipe-dot${i === mainImgIdx ? " active" : ""}`} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {images.length > 1 && (
-                  <div className="swipe-dots">
-                    {images.map((_, i) => (
-                      <span key={i} className={`swipe-dot${i === mainImgIdx ? " active" : ""}`} />
+                  <div className="thumbnail-container">
+                    {images.map((url, i) => (
+                      <div
+                        key={i}
+                        className={`thumbnail-item${i === mainImgIdx ? " active" : ""}`}
+                        onClick={() => { setMainImgIdx(i); resetZoom(); }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={`${product.name} ${i + 1}`}
+                          onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/60x60/222/f0f0f0?text=Err"; }}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
-              {images.length > 1 && (
-                <div className="thumbnail-container">
-                  {images.map((url, i) => (
-                    <div key={i} className={`thumbnail-item${i === mainImgIdx ? " active" : ""}`}
-                      onClick={() => { setMainImgIdx(i); resetZoom(); }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt={`${product.name} ${i + 1}`}
-                        onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/60x60/222/f0f0f0?text=Err"; }} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Product Info */}
-            <div className="product-detail-info">
-              <h1 className="product-detail-name">{product.name}</h1>
-              <div className="product-detail-price">
-                Rp {new Intl.NumberFormat("id-ID").format(product.price)}
+              {/* Product Info */}
+              <div className="product-detail-info">
+                <h1 className="product-detail-name">{product.name}</h1>
+                <div className="product-detail-price">
+                  Rp {new Intl.NumberFormat("id-ID").format(product.price)}
+                </div>
+                <div className="product-detail-stock">Stok: {product.inventory}</div>
+                <div className="product-detail-description">
+                  {product.description || "Tidak ada deskripsi tersedia."}
+                </div>
+                <button
+                  className="product-detail-order-btn"
+                  disabled={isSoldOut}
+                  onClick={handleAddToCart}
+                >
+                  {isSoldOut ? "Stok Habis" : added ? "✅ Ditambahkan!" : "🛒 Tambah ke Keranjang"}
+                </button>
               </div>
-              <div className="product-detail-stock">Stok: {product.inventory}</div>
-              <div className="product-detail-description">
-                {product.description || "Tidak ada deskripsi tersedia."}
-              </div>
-              <button className="product-detail-order-btn" disabled={isSoldOut} onClick={handleAddToCart}>
-                {isSoldOut ? "Stok Habis" : added ? "✅ Ditambahkan!" : "🛒 Tambah ke Keranjang"}
-              </button>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </main>
 
       <footer>
@@ -327,9 +355,28 @@ export default function ProductDetailPage() {
 const detailStyles = `
   *, *::before, *::after { box-sizing: border-box; }
   html, body { overflow-x: hidden; max-width: 100vw; }
-  body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Montserrat', sans-serif; display: flex; flex-direction: column; min-height: 100vh; }
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
   .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; width: 100%; }
-  .main-nav { background-color: var(--nav-bg); backdrop-filter: blur(15px); padding: 10px 0; border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 1000; box-shadow: 0 5px 20px var(--shadow-color); }
+
+  /* ── Navbar ── */
+  .main-nav {
+    background-color: var(--nav-bg);
+    backdrop-filter: blur(15px);
+    padding: 10px 0;
+    border-bottom: 2px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 5px 20px var(--shadow-color);
+  }
   .nav-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
   .nav-logo { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
   .header-logo { height: 40px; width: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color-strong); transition: transform 0.3s; }
@@ -354,42 +401,158 @@ const detailStyles = `
   body.light-mode .theme-toggle-btn .fa-moon { transform: translateY(-150%); opacity: 0; }
   .cart-nav-btn { position: relative; background: transparent; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; }
   .cart-badge { position: absolute; top: -4px; right: -4px; background: #e53e3e; color: #fff; font-size: 0.65rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+  /* ── Main section ── */
   .product-detail-section { padding: 2rem 0; flex-grow: 1; }
-  .product-detail-grid { display: grid; grid-template-columns: 1fr; gap: 0; max-width: 1000px; margin: 0 auto; background: var(--card-bg); border-radius: 12px; box-shadow: 0 10px 25px var(--shadow-color); border: 2px solid var(--border-color); overflow: hidden; }
-  @media (min-width: 768px) { .product-detail-grid { grid-template-columns: 1.2fr 1fr; } }
-  .product-detail-image-gallery { position: relative; width: 100%; display: flex; flex-direction: column; }
-  .main-product-image-wrapper { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; touch-action: none; }
-  .main-product-image { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; will-change: transform; }
-  .thumbnail-container { position: absolute; bottom: 10px; left: 10px; right: 10px; display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; z-index: 10; scrollbar-width: none; -ms-overflow-style: none; }
+
+  /* ── Grid: KEY FIX — no overflow:hidden, no fixed height ── */
+  .product-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: 1000px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    /* border-radius on grid itself tapi overflow visible */
+    border-radius: 12px;
+    box-shadow: 0 10px 25px var(--shadow-color);
+    border: 2px solid var(--border-color);
+    /* TIDAK pakai overflow:hidden — biar konten ga kepotong di mobile */
+    overflow: visible;
+    height: auto;
+  }
+  @media (min-width: 768px) {
+    .product-detail-grid { grid-template-columns: 1.2fr 1fr; }
+  }
+
+  /* ── Image gallery ── */
+  .product-detail-image-gallery {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    /* border-radius hanya di sudut yang relevan */
+    border-radius: 10px 10px 0 0;
+    overflow: hidden; /* overflow:hidden cukup di sini buat rounded corner foto */
+  }
+  @media (min-width: 768px) {
+    .product-detail-image-gallery {
+      border-radius: 10px 0 0 10px;
+    }
+  }
+
+  .main-product-image-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    touch-action: none;
+  }
+  .main-product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+    will-change: transform;
+  }
+
+  /* Thumbnail — di mobile posisi static (di bawah foto), desktop absolute */
+  .thumbnail-container {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 12px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
   .thumbnail-container::-webkit-scrollbar { display: none; }
-  .thumbnail-item { width: 52px; height: 52px; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; flex-shrink: 0; }
+  @media (min-width: 768px) {
+    .thumbnail-container {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      border-top: none;
+      background: transparent;
+      padding: 5px 0;
+      z-index: 10;
+    }
+  }
+  .thumbnail-item { width: 60px; height: 60px; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.3s, transform 0.2s; flex-shrink: 0; }
+  @media (min-width: 768px) { .thumbnail-item { width: 52px; height: 52px; } }
   .thumbnail-item.active, .thumbnail-item:hover { border-color: var(--primary-color); transform: translateY(-2px); }
   .thumbnail-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
   .product-detail-sold-out { position: absolute; top: 15px; left: 15px; padding: 6px 12px; background: #fff; color: #1a1a1a; font-size: 0.85rem; font-weight: 700; border-radius: 6px; z-index: 15; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
   .swipe-dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 10; pointer-events: none; }
   .swipe-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.45); transition: all 0.3s; }
   .swipe-dot.active { background: #fff; width: 18px; border-radius: 3px; }
-  @media (max-width: 767px) {
-    .thumbnail-container { position: static; padding: 10px 12px; background: var(--card-bg); border-top: 1px solid var(--border-color); }
-    .thumbnail-item { width: 60px; height: 60px; }
-    .swipe-dots { display: flex; }
-  }
+  @media (max-width: 767px) { .swipe-dots { display: flex; } }
   @media (min-width: 768px) { .swipe-dots { display: none; } }
-  .product-detail-info { padding: 1.5rem; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-  .product-detail-name { font-family: 'Anton', sans-serif; font-size: clamp(1.4rem, 5vw, 3rem); margin-bottom: 1rem; color: var(--text-color); line-height: 1.2; text-transform: uppercase; word-break: break-word; overflow-wrap: break-word; hyphens: auto; }
+
+  /* ── Product info: KEY FIX — height auto, no overflow hidden ── */
+  .product-detail-info {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    /* Biarkan tinggi natural mengikuti konten */
+    height: auto;
+    min-height: unset;
+    overflow: visible;
+  }
+  .product-detail-name {
+    font-family: 'Anton', sans-serif;
+    font-size: clamp(1.4rem, 5vw, 3rem);
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    line-height: 1.2;
+    text-transform: uppercase;
+    /* Biarkan wrap natural, jangan overflow hidden */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: normal;
+  }
   .product-detail-price { font-family: 'Anton', sans-serif; font-size: clamp(1.3rem, 4vw, 2.2rem); color: var(--primary-color); margin-bottom: 1rem; letter-spacing: 1px; }
   .product-detail-stock { font-size: 0.95rem; color: var(--text-color-subtle); margin-bottom: 1.5rem; }
   .product-detail-description { font-size: 0.95rem; color: var(--text-color-secondary); line-height: 1.7; margin-bottom: 2rem; white-space: pre-wrap; flex-grow: 1; word-break: break-word; }
-  .product-detail-order-btn { width: 100%; padding: 16px; background: var(--primary-color); color: var(--text-on-primary); border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; margin-top: auto; }
+  .product-detail-order-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    /* Jangan pakai margin-top: auto karena di mobile bisa ilang */
+    margin-top: 0;
+    flex-shrink: 0;
+  }
   .product-detail-order-btn:hover { background: var(--text-color); color: var(--bg-color); transform: translateY(-3px); }
   .product-detail-order-btn:disabled { background: var(--disabled-bg); color: var(--disabled-text); cursor: not-allowed; transform: none; }
-  .loading-container, .error-container { text-align: center; padding: 50px; font-size: 1rem; color: var(--text-color-secondary); }
-  .error-container { color: #e53e3e; font-weight: bold; }
+
+  /* ── Error ── */
+  .error-container { text-align: center; padding: 50px; font-size: 1rem; color: #e53e3e; font-weight: bold; }
+
+  /* ── Footer ── */
   footer { background-color: var(--footer-bg); color: var(--text-color-subtle); text-align: center; padding: 2rem 16px; font-size: 0.85rem; border-top: 2px solid var(--border-color); margin-top: auto; }
   footer p { margin-bottom: 10px; }
   .footer-social { margin-top: 20px; }
   .footer-social a { color: var(--text-color-subtle); font-size: 1.4rem; margin: 0 10px; transition: all 0.3s; display: inline-block; }
   .footer-social a:hover { color: var(--primary-color); transform: translateY(-3px); }
+
+  /* ── Modal ── */
   .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.4s; padding: 16px; }
   .modal-overlay.visible { opacity: 1; pointer-events: auto; }
   .modal-content { background: var(--modal-bg); padding: 30px 24px; border-radius: 15px; max-width: 450px; width: 100%; text-align: center; transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.18,0.89,0.32,1.28); box-shadow: 0 20px 50px var(--shadow-color-strong); border: 2px solid var(--border-color-strong); max-height: 90vh; overflow-y: auto; }
@@ -405,6 +568,8 @@ const detailStyles = `
   .modal-btn-cancel { background: transparent; border-color: var(--disabled-bg); color: var(--text-color-secondary); }
   .modal-btn-submit { background: var(--primary-color); border-color: var(--primary-color); color: var(--text-on-primary); }
   .modal-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── Mobile tweaks ── */
   @media (max-width: 600px) {
     .nav-content { flex-direction: row; align-items: center; }
     .nav-links { gap: 4px; }
@@ -416,10 +581,22 @@ const detailStyles = `
     .modal-buttons { flex-direction: column; }
     .modal-buttons button { width: 100%; }
   }
-  @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+
+  /* ── Skeleton shimmer ── */
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
   .skeleton-detail { pointer-events: none; }
-  .skeleton-detail-image, .skeleton-line-d, .skeleton-btn-d { background: linear-gradient(90deg, var(--border-color) 25%, var(--card-bg) 50%, var(--border-color) 75%); background-size: 400px 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; }
-  .skeleton-detail-image { width: 100%; aspect-ratio: 3 / 4; border-radius: 12px 12px 0 0; }
+  .skeleton-detail-image,
+  .skeleton-line-d,
+  .skeleton-btn-d {
+    background: linear-gradient(90deg, var(--border-color) 25%, var(--card-bg) 50%, var(--border-color) 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.4s infinite linear;
+    border-radius: 6px;
+  }
+  .skeleton-detail-image { width: 100%; aspect-ratio: 3 / 4; border-radius: 0; }
   .skeleton-line-d { height: 16px; margin-bottom: 16px; }
   .skeleton-line-d.w70 { width: 70%; height: 36px; margin-bottom: 20px; }
   .skeleton-line-d.w40 { width: 40%; height: 28px; }
@@ -427,5 +604,5 @@ const detailStyles = `
   .skeleton-line-d.w90 { width: 90%; }
   .skeleton-line-d.w80 { width: 80%; }
   .skeleton-line-d.w60 { width: 60%; }
-  .skeleton-btn-d { height: 52px; width: 100%; margin-top: auto; border-radius: 10px; }
+  .skeleton-btn-d { height: 52px; width: 100%; margin-top: 8px; border-radius: 10px; }
 `;
