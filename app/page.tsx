@@ -79,7 +79,7 @@ function Navbar({ onCategoryChange, categories, onCartOpen, totalItems, onMyOrde
           </div>
           {/* Tombol Cek Pesanan */}
           <button className="my-orders-nav-btn" onClick={onMyOrders} title="Cek Pesanan Saya">
-            📋
+            <i className="fas fa-receipt" />
           </button>
           <button className="theme-toggle-btn" onClick={toggleTheme} title="Ganti tema">
             <i className="fas fa-sun" />
@@ -305,6 +305,6 @@ export default function HomePage() {
 const cartNavStyles = `
   .cart-nav-btn { position: relative; background: transparent; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; }
   .cart-badge { position: absolute; top: -4px; right: -4px; background: #e53e3e; color: #fff; font-size: 0.65rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-  .my-orders-nav-btn { background: transparent; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; transition: transform 0.2s; }
-  .my-orders-nav-btn:hover { transform: scale(1.15); }
+  .my-orders-nav-btn { background: transparent; border: none; color: var(--text-color-secondary); font-size: 1.2rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; transition: transform 0.2s; }
+  .my-orders-nav-btn:hover { transform: scale(1.15); color: var(--primary-color); }
 `;

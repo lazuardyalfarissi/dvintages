@@ -36,7 +36,7 @@ img {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 10px;
 }
 .nav-logo {
@@ -728,26 +728,36 @@ footer p {
 }
 
 @media (max-width: 480px) {
-  .nav-links a {
-    font-size: 0.85rem;
-    padding: 6px 8px;
+  /* yang sudah ada tetap, tambahin ini: */
+  .nav-links {
+    gap: 2px;
   }
-  .social-icons a {
-    font-size: 1rem;
-    padding: 4px;
+  .nav-links a {
+    font-size: 0.75rem;
+    padding: 5px 5px;
+    letter-spacing: 0;
   }
   .social-icons {
-    gap: 4px;
+    gap: 2px;
+  }
+  .social-icons a {
+    font-size: 0.9rem;
+    padding: 3px;
   }
   .theme-toggle-btn {
-    width: 36px;
+    width: 30px;
+    height: 30px;
+  }
+  .cart-nav-btn {
+    font-size: 1rem;
+    padding: 3px 5px;
+  }
+  .my-orders-nav-btn {
+    font-size: 0.95rem;
+    padding: 3px 5px;
+  }
+  .header-logo {
     height: 36px;
-    font-size: 1rem;
-  }
-  .banner-slide h1 {
-    font-size: 2.5rem;
-  }
-  .banner-slide p {
-    font-size: 1rem;
+    width: 36px;
   }
 }
