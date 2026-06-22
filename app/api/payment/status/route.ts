@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getPakasirTransactionDetail } from "@/lib/pakasir";
 
-// GET /api/payment/status?order_id=123
 export async function GET(req: NextRequest) {
   try {
     const orderId = req.nextUrl.searchParams.get("order_id");
@@ -14,7 +13,8 @@ export async function GET(req: NextRequest) {
     }
 
     const [rows] = await pool.execute(
-      `SELECT op.order_id, op.amount, op.total_payment, op.status AS local_status, op.expired_at,
+      `SELECT op.order_id, op.pakasir_order_id, op.amount, op.total_payment,
+              op.status AS local_status, op.expired_at,
               o.payment_status AS order_payment_status
        FROM order_payments op
        JOIN orders o ON o.id = op.order_id
@@ -30,7 +30,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Kalau DB lokal sudah final, tidak perlu hit Pakasir lagi
     if (
       payment.local_status === "completed" ||
       payment.local_status === "expired" ||
@@ -42,19 +41,16 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Hit Pakasir — pakai total_payment (bukan amount) karena itu yang
-    // dikirim waktu create dan yang Pakasir kenali sebagai "amount" transaksi.
-    // Kalau kolom total_payment belum ada di DB lama, fallback ke amount.
-    const pakasirAmount = Number(payment.total_payment ?? payment.amount);
+    // amount (sebelum fee) — harus sama dengan yang dikirim waktu create
+    const pakasirAmount = Number(payment.amount);
 
     let detail;
     try {
       detail = await getPakasirTransactionDetail({
-        orderId,
+        orderId: payment.pakasir_order_id,
         amount: pakasirAmount,
       });
     } catch (pakasirError: any) {
-      // Pakasir tidak bisa dihubungi — jangan mark expired, biarkan polling lanjut
       console.error("[Pakasir] gagal cek status:", pakasirError.message, {
         orderId,
         pakasirAmount,
@@ -64,15 +60,6 @@ export async function GET(req: NextRequest) {
         data: { status: "pending" },
       });
     }
-
-    console.log("[Pakasir Status]", {
-      orderId,
-      pakasirAmount,
-      localStatus: payment.local_status,
-      pakasirStatus: detail.status,
-      expiredAt: payment.expired_at,
-      now: new Date().toISOString(),
-    });
 
     if (detail.status === "completed") {
       await pool.execute(
@@ -111,11 +98,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Pakasir masih pending — return pending, polling lanjut
     return NextResponse.json({
       success: true,
       data: { status: "pending" },
     });
+
   } catch (error: any) {
     console.error("[/api/payment/status] error:", error);
     return NextResponse.json(

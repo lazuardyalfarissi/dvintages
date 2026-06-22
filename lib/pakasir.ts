@@ -28,7 +28,6 @@ export type PakasirPaymentMethod =
   | "artha_graha_va"
   | "bri_va";
 
-// Label ramah-pengguna untuk ditampilkan di UI pemilihan metode bayar
 export const PAKASIR_PAYMENT_LABELS: Record<PakasirPaymentMethod, string> = {
   qris: "QRIS (semua e-wallet & m-banking)",
   bri_va: "BRI Virtual Account",
@@ -74,9 +73,6 @@ interface PakasirDetailResponse {
   };
 }
 
-/**
- * Membuat transaksi baru di Pakasir (mendapatkan QR string / nomor VA).
- */
 export async function createPakasirTransaction(params: {
   orderId: string | number;
   amount: number;
@@ -95,7 +91,6 @@ export async function createPakasirTransaction(params: {
         amount: params.amount,
         api_key: API_KEY,
       }),
-      // Jangan cache respons pembuatan transaksi
       cache: "no-store",
     }
   );
@@ -109,10 +104,6 @@ export async function createPakasirTransaction(params: {
   return data.payment;
 }
 
-/**
- * Cek status transaksi langsung ke Pakasir (lebih valid daripada
- * hanya mengandalkan webhook — sesuai rekomendasi dokumentasi mereka).
- */
 export async function getPakasirTransactionDetail(params: {
   orderId: string | number;
   amount: number;
@@ -135,9 +126,6 @@ export async function getPakasirTransactionDetail(params: {
   return data.transaction;
 }
 
-/**
- * Batalkan transaksi (jarang dipakai, tapi disediakan sesuai docs).
- */
 export async function cancelPakasirTransaction(params: {
   orderId: string | number;
   amount: number;
@@ -161,12 +149,6 @@ export async function cancelPakasirTransaction(params: {
   }
 }
 
-/**
- * KHUSUS SANDBOX: simulasikan pembayaran supaya webhook ke-trigger,
- * tanpa harus transfer beneran. Hapus pemanggilan ini dari UI produksi
- * begitu project sudah lolos KYC (atau biarkan saja — di mode production
- * endpoint ini otomatis tidak berlaku/ditolak oleh Pakasir).
- */
 export async function simulatePakasirPayment(params: {
   orderId: string | number;
   amount: number;

@@ -1,31 +1,21 @@
 // app/api/payment/create/route.ts
-//
-// FIX: jangan percaya mentah-mentah field `total_payment` dari Pakasir.
-// Di production terbukti field ini kadang balik sama dengan `amount`
-// (tidak termasuk fee), padahal `fee`-nya sendiri valid/terhitung benar
-// (mis. amount 715000, fee 7150, tapi total_payment ikut 715000 — harusnya
-// 722150). Daripada bug upstream ini diam-diam ngerugiin customer/toko,
-// kita hitung ulang totalnya sendiri (amount + fee) dan TIDAK pernah
-// trust nilai total_payment dari Pakasir untuk disimpan/ditampilkan.
-// Kalau ternyata beda, kita log supaya ketahuan kalau perilaku Pakasir
-// berubah lagi di kemudian hari.
-//
-// amount yang dikirim ke Pakasir = orders.total_price (sudah termasuk ongkir,
-// belum termasuk fee — fee dihitung otomatis oleh Pakasir).
-
 import { NextRequest, NextResponse } from "next/server";
 import mysql from "mysql2/promise";
 
 const PAKASIR_BASE = "https://app.pakasir.com/api";
 
-// Sesuaikan dengan daftar PAKASIR_PAYMENT_LABELS_CLIENT di lib/pakasir-client.ts
-const METHOD_ENDPOINT: Record<string, string> = {
-  qris: "qris",
-  bca_va: "va/bca",
-  bni_va: "va/bni",
-  bri_va: "va/bri",
-  permata_va: "va/permata",
-};
+const VALID_METHODS = new Set<string>([
+  "qris",
+  "bri_va",
+  "bni_va",
+  "permata_va",
+  "cimb_niaga_va",
+  "maybank_va",
+  "atm_bersama_va",
+  "artha_graha_va",
+  "bnc_va",
+  "sampoerna_va",
+]);
 
 export async function POST(req: NextRequest) {
   let connection;
@@ -39,8 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const endpointPath = METHOD_ENDPOINT[method];
-    if (!endpointPath) {
+    if (!VALID_METHODS.has(method)) {
       return NextResponse.json(
         { success: false, message: "Metode pembayaran tidak dikenali" },
         { status: 400 }
@@ -68,11 +57,10 @@ export async function POST(req: NextRequest) {
     }
 
     const order = orderRows[0];
-    const amount = Number(order.total_price); // sudah termasuk ongkir
-
+    const amount = Number(order.total_price);
     const pakasirOrderId = `DV-${order.id}-${Date.now()}`;
 
-    const pakasirRes = await fetch(`${PAKASIR_BASE}/transactioncreate/${endpointPath}`, {
+    const pakasirRes = await fetch(`${PAKASIR_BASE}/transactioncreate/${method}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -95,7 +83,20 @@ export async function POST(req: NextRequest) {
 
     const { fee, total_payment, payment_number, payment_method } = pakasirData.payment;
 
-    // ── Hitung total_payment sendiri, jangan percaya field dari Pakasir ──
+    if (!payment_number) {
+      console.error("Pakasir payment_number kosong:", pakasirData.payment);
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            process.env.NODE_ENV === "development"
+              ? `Sandbox: payment_number kosong untuk metode "${method}". Kemungkinan metode ini tidak didukung di sandbox — coba QRIS.`
+              : "Gagal mendapatkan nomor pembayaran. Coba metode lain.",
+        },
+        { status: 502 }
+      );
+    }
+
     const feeNum = Number(fee) || 0;
     const totalPaymentFromPakasir = Number(total_payment) || 0;
     const computedTotalPayment = amount + feeNum;
@@ -114,32 +115,23 @@ export async function POST(req: NextRequest) {
     }
 
     const finalTotalPayment = computedTotalPayment;
-
-    // Pakasir biasanya kasih window 24 jam; kalau response gak punya expired_at
-    // eksplisit, kita set manual di sini.
     const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // order_payments punya UNIQUE KEY pada order_id, jadi pakai
-    // INSERT ... ON DUPLICATE KEY UPDATE supaya aman kalau customer
-    // ganti channel pembayaran dan create ulang.
+    // Hapus dulu row lama kalau ada, baru insert baru
+    // Ini lebih aman daripada ON DUPLICATE KEY UPDATE untuk kasus ganti channel
+    await connection.execute(
+      `DELETE FROM order_payments WHERE order_id = ?`,
+      [order.id]
+    );
+
     await connection.execute(
       `INSERT INTO order_payments
-        (order_id, project_slug, payment_method, amount, fee, total_payment,
-         payment_number, status, expired_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, NOW(), NOW())
-       ON DUPLICATE KEY UPDATE
-         project_slug = VALUES(project_slug),
-         payment_method = VALUES(payment_method),
-         amount = VALUES(amount),
-         fee = VALUES(fee),
-         total_payment = VALUES(total_payment),
-         payment_number = VALUES(payment_number),
-         status = 'pending',
-         expired_at = VALUES(expired_at),
-         completed_at = NULL,
-         updated_at = NOW()`,
+        (order_id, pakasir_order_id, project_slug, payment_method, amount, fee,
+         total_payment, payment_number, status, expired_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NOW(), NOW())`,
       [
         order.id,
+        pakasirOrderId,
         process.env.PAKASIR_PROJECT_SLUG,
         payment_method,
         amount,
@@ -160,13 +152,15 @@ export async function POST(req: NextRequest) {
       data: {
         paymentNumber: payment_number,
         fee: feeNum,
-        baseAmount: amount,                  // harga produk + ongkir, sebelum fee
-        totalPayment: finalTotalPayment,      // baseAmount + fee, yang harus dibayar customer
+        baseAmount: amount,
+        totalPayment: finalTotalPayment,
         expiredAt: expiredAt.toISOString(),
       },
     });
+
   } catch (err: any) {
-    console.error("payment/create error:", err);
+    console.error("payment/create error:", err.message);
+    console.error("Error code:", err.code);
     return NextResponse.json(
       { success: false, message: "Terjadi kesalahan pada server" },
       { status: 500 }
