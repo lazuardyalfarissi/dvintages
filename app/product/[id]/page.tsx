@@ -191,7 +191,7 @@ export default function ProductDetailPage() {
     <>
       <style suppressHydrationWarning>{detailStyles}</style>
 
-      {/* Navbar */}
+      {/* Navbar — pakai class dari store.css */}
       <header className="main-nav">
         <div className="container nav-content">
           <a href="/" className="nav-logo">
@@ -353,60 +353,14 @@ export default function ProductDetailPage() {
   );
 }
 
+// Catatan: semua CSS navbar (main-nav, nav-links, dropdown, social-icons,
+// theme-toggle-btn, cart-nav-btn, cart-badge) sudah dihapus dari sini
+// karena dihandle oleh store.css yang diimport di atas.
 const detailStyles = `
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body { overflow-x: hidden; max-width: 100vw; }
-  body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-family: 'Montserrat', sans-serif;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; width: 100%; }
-
-  /* ── Navbar ── */
-  .main-nav {
-    background-color: var(--nav-bg);
-    backdrop-filter: blur(15px);
-    padding: 10px 0;
-    border-bottom: 2px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 5px 20px var(--shadow-color);
-  }
-  .nav-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .nav-logo { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
-  .header-logo { height: 40px; width: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color-strong); transition: transform 0.3s; }
-  .header-logo:hover { transform: rotate(360deg); }
-  .nav-links { list-style: none; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0; padding: 0; }
-  .nav-links a { text-decoration: none; color: var(--text-color-secondary); font-weight: 700; transition: all 0.3s; padding: 6px 8px; border-radius: 6px; font-family: 'Anton', sans-serif; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; }
-  .nav-links a:hover { color: var(--primary-color); }
-  .dropdown { position: relative; }
-  .dropdown-content { display: none; position: absolute; top: 120%; left: 50%; transform: translateX(-50%); background: var(--dropdown-bg); min-width: 160px; box-shadow: 0 12px 25px var(--shadow-color-strong); z-index: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
-  .dropdown-content a { color: var(--text-color-secondary); padding: 10px 16px; display: block; font-weight: 500; font-size: 0.95rem; cursor: pointer; }
-  .dropdown:hover .dropdown-content { display: block; }
-  .social-icons { display: flex; gap: 8px; align-items: center; }
-  .social-icons a { color: var(--text-color-secondary); font-size: 1.1rem; transition: all 0.3s; padding: 6px; }
-  .social-icons a:hover { transform: translateY(-3px); }
-  .social-icons .instagram:hover { color: var(--social-instagram); }
-  .social-icons .tiktok:hover { color: var(--social-tiktok); }
-  .social-icons .whatsapp:hover { color: var(--social-whatsapp); }
-  .theme-toggle-btn { background: transparent; border: none; color: var(--text-color-secondary); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.3s; overflow: hidden; position: relative; flex-shrink: 0; }
-  .theme-toggle-btn i { position: absolute; transition: transform 0.4s, opacity 0.4s; }
-  .theme-toggle-btn .fa-sun { transform: translateY(150%); opacity: 0; }
-  body.light-mode .theme-toggle-btn .fa-sun { transform: translateY(0); opacity: 1; }
-  body.light-mode .theme-toggle-btn .fa-moon { transform: translateY(-150%); opacity: 0; }
-  .cart-nav-btn { position: relative; background: transparent; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; }
-  .cart-badge { position: absolute; top: -4px; right: -4px; background: #e53e3e; color: #fff; font-size: 0.65rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
   /* ── Main section ── */
   .product-detail-section { padding: 2rem 0; flex-grow: 1; }
 
-  /* ── Grid: KEY FIX — no overflow:hidden, no fixed height ── */
+  /* ── Grid ── */
   .product-detail-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -414,11 +368,9 @@ const detailStyles = `
     max-width: 1000px;
     margin: 0 auto;
     background: var(--card-bg);
-    /* border-radius on grid itself tapi overflow visible */
     border-radius: 12px;
     box-shadow: 0 10px 25px var(--shadow-color);
     border: 2px solid var(--border-color);
-    /* TIDAK pakai overflow:hidden — biar konten ga kepotong di mobile */
     overflow: visible;
     height: auto;
   }
@@ -432,14 +384,11 @@ const detailStyles = `
     width: 100%;
     display: flex;
     flex-direction: column;
-    /* border-radius hanya di sudut yang relevan */
     border-radius: 10px 10px 0 0;
-    overflow: hidden; /* overflow:hidden cukup di sini buat rounded corner foto */
+    overflow: hidden;
   }
   @media (min-width: 768px) {
-    .product-detail-image-gallery {
-      border-radius: 10px 0 0 10px;
-    }
+    .product-detail-image-gallery { border-radius: 10px 0 0 10px; }
   }
 
   .main-product-image-wrapper {
@@ -459,7 +408,7 @@ const detailStyles = `
     will-change: transform;
   }
 
-  /* Thumbnail — di mobile posisi static (di bawah foto), desktop absolute */
+  /* Thumbnail */
   .thumbnail-container {
     display: flex;
     gap: 8px;
@@ -497,12 +446,11 @@ const detailStyles = `
   @media (max-width: 767px) { .swipe-dots { display: flex; } }
   @media (min-width: 768px) { .swipe-dots { display: none; } }
 
-  /* ── Product info: KEY FIX — height auto, no overflow hidden ── */
+  /* ── Product info ── */
   .product-detail-info {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    /* Biarkan tinggi natural mengikuti konten */
     height: auto;
     min-height: unset;
     overflow: visible;
@@ -514,7 +462,6 @@ const detailStyles = `
     color: var(--text-color);
     line-height: 1.2;
     text-transform: uppercase;
-    /* Biarkan wrap natural, jangan overflow hidden */
     word-break: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
@@ -536,7 +483,6 @@ const detailStyles = `
     transition: all 0.3s;
     text-transform: uppercase;
     letter-spacing: 1px;
-    /* Jangan pakai margin-top: auto karena di mobile bisa ilang */
     margin-top: 0;
     flex-shrink: 0;
   }
@@ -546,48 +492,7 @@ const detailStyles = `
   /* ── Error ── */
   .error-container { text-align: center; padding: 50px; font-size: 1rem; color: #e53e3e; font-weight: bold; }
 
-  /* ── Footer ── */
-  footer { background-color: var(--footer-bg); color: var(--text-color-subtle); text-align: center; padding: 2rem 16px; font-size: 0.85rem; border-top: 2px solid var(--border-color); margin-top: auto; }
-  footer p { margin-bottom: 10px; }
-  .footer-social { margin-top: 20px; }
-  .footer-social a { color: var(--text-color-subtle); font-size: 1.4rem; margin: 0 10px; transition: all 0.3s; display: inline-block; }
-  .footer-social a:hover { color: var(--primary-color); transform: translateY(-3px); }
-
-  /* ── Modal ── */
-  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.4s; padding: 16px; }
-  .modal-overlay.visible { opacity: 1; pointer-events: auto; }
-  .modal-content { background: var(--modal-bg); padding: 30px 24px; border-radius: 15px; max-width: 450px; width: 100%; text-align: center; transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.18,0.89,0.32,1.28); box-shadow: 0 20px 50px var(--shadow-color-strong); border: 2px solid var(--border-color-strong); max-height: 90vh; overflow-y: auto; }
-  .modal-overlay.visible .modal-content { transform: scale(1); }
-  .modal-content h3 { font-family: 'Anton', sans-serif; text-transform: uppercase; font-size: 1.6rem; margin-bottom: 24px; }
-  .order-form { text-align: left; }
-  .form-group { margin-bottom: 20px; position: relative; }
-  .form-label { display: block; margin-bottom: 8px; font-weight: 700; color: var(--text-color); font-size: 0.9rem; }
-  .form-input { width: 100%; padding: 13px; border: 2px solid var(--border-color-strong); border-radius: 8px; font-size: 1rem; background: var(--input-bg); color: var(--text-color); outline: none; transition: all 0.3s; }
-  .form-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-shadow); }
-  .modal-buttons { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
-  .modal-buttons button { flex: 1; padding: 12px 16px; border: 2px solid; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; text-transform: uppercase; }
-  .modal-btn-cancel { background: transparent; border-color: var(--disabled-bg); color: var(--text-color-secondary); }
-  .modal-btn-submit { background: var(--primary-color); border-color: var(--primary-color); color: var(--text-on-primary); }
-  .modal-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  /* ── Mobile tweaks ── */
-  @media (max-width: 600px) {
-    .nav-content { flex-direction: row; align-items: center; }
-    .nav-links { gap: 4px; }
-    .nav-links > li > a, .nav-links > li.dropdown > a { font-size: 0.85rem; padding: 5px 6px; }
-    .social-icons a { font-size: 1rem; padding: 5px; }
-    .product-detail-info { padding: 1.25rem; }
-    .modal-content { padding: 24px 18px; }
-    .modal-content h3 { font-size: 1.4rem; }
-    .modal-buttons { flex-direction: column; }
-    .modal-buttons button { width: 100%; }
-  }
-
   /* ── Skeleton shimmer ── */
-  @keyframes shimmer {
-    0% { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
-  }
   .skeleton-detail { pointer-events: none; }
   .skeleton-detail-image,
   .skeleton-line-d,
@@ -606,4 +511,8 @@ const detailStyles = `
   .skeleton-line-d.w80 { width: 80%; }
   .skeleton-line-d.w60 { width: 60%; }
   .skeleton-btn-d { height: 52px; width: 100%; margin-top: 8px; border-radius: 10px; }
+
+  @media (max-width: 600px) {
+    .product-detail-info { padding: 1.25rem; }
+  }
 `;
