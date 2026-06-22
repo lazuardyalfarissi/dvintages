@@ -408,7 +408,11 @@ const detailStyles = `
     will-change: transform;
   }
 
-  /* Thumbnail */
+  /* ── Cart button ── */
+  .cart-nav-btn { position: relative; background: transparent; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; }
+  .cart-badge { position: absolute; top: -4px; right: -4px; background: #e53e3e; color: #fff; font-size: 0.65rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    
+    /* Thumbnail */
   .thumbnail-container {
     display: flex;
     gap: 8px;
