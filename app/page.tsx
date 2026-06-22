@@ -4,6 +4,7 @@ import "@/styles/store.css";
 import { useCart } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
 import CheckoutModal from "@/components/CheckoutModal";
+import MyOrdersModal from "@/components/MyOrdersModal";
 
 interface Product {
   id: number; name: string; description: string; price: number;
@@ -13,11 +14,12 @@ interface Banner { id: number; image_url: string; title: string; description: st
 interface Category { id: number; name: string; }
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar({ onCategoryChange, categories, onCartOpen, totalItems }: {
+function Navbar({ onCategoryChange, categories, onCartOpen, totalItems, onMyOrders }: {
   onCategoryChange: (cat: string) => void;
   categories: Category[];
   onCartOpen: () => void;
   totalItems: number;
+  onMyOrders: () => void;
 }) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [hidden, setHidden] = useState(false);
@@ -75,6 +77,10 @@ function Navbar({ onCategoryChange, categories, onCartOpen, totalItems }: {
               <i className="fab fa-whatsapp" />
             </a>
           </div>
+          {/* Tombol Cek Pesanan */}
+          <button className="my-orders-nav-btn" onClick={onMyOrders} title="Cek Pesanan Saya">
+            📋
+          </button>
           <button className="theme-toggle-btn" onClick={toggleTheme} title="Ganti tema">
             <i className="fas fa-sun" />
             <i className="fas fa-moon" />
@@ -216,6 +222,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [myOrdersOpen, setMyOrdersOpen] = useState(false);
 
   const { addItem, totalItems } = useCart();
 
@@ -253,6 +260,7 @@ export default function HomePage() {
         categories={categories}
         onCartOpen={() => setCartOpen(true)}
         totalItems={totalItems}
+        onMyOrders={() => setMyOrdersOpen(true)}
       />
       <BannerCarousel banners={banners} />
 
@@ -289,6 +297,7 @@ export default function HomePage() {
         onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }}
       />
       {checkoutOpen && <CheckoutModal onClose={() => setCheckoutOpen(false)} />}
+      {myOrdersOpen && <MyOrdersModal onClose={() => setMyOrdersOpen(false)} />}
     </>
   );
 }
@@ -296,4 +305,6 @@ export default function HomePage() {
 const cartNavStyles = `
   .cart-nav-btn { position: relative; background: transparent; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; }
   .cart-badge { position: absolute; top: -4px; right: -4px; background: #e53e3e; color: #fff; font-size: 0.65rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .my-orders-nav-btn { background: transparent; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; transition: transform 0.2s; }
+  .my-orders-nav-btn:hover { transform: scale(1.15); }
 `;

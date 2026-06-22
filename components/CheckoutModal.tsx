@@ -195,6 +195,9 @@ export default function CheckoutModal({ onClose }: Props) {
       setOrderId(newOrderId);
       setWaNumber(wa);
 
+      // Simpan ke localStorage supaya bisa diakses setelah refresh
+      localStorage.setItem("last_order_id", String(newOrderId));
+
       // ── Simpan semua data yang dibutuhkan SEBELUM clearCart ───────────
       const currentOrderTotal = orderTotal;
       setSavedOrderTotal(currentOrderTotal);
@@ -205,7 +208,6 @@ export default function CheckoutModal({ onClose }: Props) {
       clearCart();
 
       if (paymentChoice === "wa_manual") {
-        // WA manual: langsung kirim email sekarang
         fetch("/api/orders/notify-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -243,14 +245,13 @@ export default function CheckoutModal({ onClose }: Props) {
         setStep("success");
 
       } else {
-        // Pakasir: JANGAN kirim email dulu — tunggu sampai handleCreatePayment
         setStep("choose-channel");
       }
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
   }
 
-  // ── Step 2: create Pakasir transaction ───────────────────────────────
+  // ── Step 2: create Pakasir transaction ────────────────────────────────
   async function handleCreatePayment() {
     if (!orderId) return;
     setLoading(true);
@@ -275,7 +276,6 @@ export default function CheckoutModal({ onClose }: Props) {
       totalDurationMs.current = null;
       setStep("pay");
 
-      // Kirim email sekarang — pakasirInstructions sudah lengkap
       fetch("/api/orders/notify-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -307,7 +307,7 @@ export default function CheckoutModal({ onClose }: Props) {
     finally { setLoading(false); }
   }
 
-  // ── Polling status pembayaran ────────────────────────────────────────
+  // ── Polling status pembayaran ─────────────────────────────────────────
   const pollStatus = useCallback(async () => {
     if (!orderId) return;
     try {
@@ -581,7 +581,11 @@ export default function CheckoutModal({ onClose }: Props) {
                     <span style={{ fontSize: "0.85rem" }}>Cek inbox email <strong>{email}</strong> untuk detail pesanan.</span>
                   </p>
                   <div className="modal-buttons">
-                    <button type="button" className="modal-btn-submit" onClick={close}>Selesai</button>
+                    <a href={`/order/${orderId}`} className="modal-btn-submit"
+                      style={{ textDecoration: "none", textAlign: "center" }}>
+                      Lihat Status Pesanan
+                    </a>
+                    <button type="button" className="modal-btn-cancel" onClick={close}>Tutup</button>
                   </div>
                 </div>
 
@@ -668,7 +672,11 @@ export default function CheckoutModal({ onClose }: Props) {
                 Lanjutkan konfirmasi pembayaran di WhatsApp yang baru terbuka.
               </p>
               <div className="modal-buttons">
-                <button type="button" className="modal-btn-submit" onClick={close}>Tutup</button>
+                <a href={`/order/${orderId}`} className="modal-btn-submit"
+                  style={{ textDecoration: "none", textAlign: "center" }}>
+                  Lihat Status Pesanan
+                </a>
+                <button type="button" className="modal-btn-cancel" onClick={close}>Tutup</button>
               </div>
             </div>
           )}
