@@ -188,7 +188,7 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      <style>{detailStyles}</style>
+      <style suppressHydrationWarning>{detailStyles}</style>
 
       {/* Navbar */}
       <header className="main-nav">
