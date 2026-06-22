@@ -157,7 +157,7 @@ function BannerCarousel({ banners }: { banners: Banner[] }) {
 // ─── Product Card ─────────────────────────────────────────────────────────────
 function ProductCard({ p, onAddToCart }: {
   p: Product;
-  onAddToCart: (item: { id: number; name: string; price: number; image_url: string }) => void;
+  onAddToCart: (item: { id: number; name: string; price: number; image_url: string; inventory: number }) => void;
 }) {
   const [imgIdx, setImgIdx] = useState(0);
   const [added, setAdded] = useState(false);
@@ -165,7 +165,7 @@ function ProductCard({ p, onAddToCart }: {
   const images = p.image_url.length > 0 ? p.image_url : ["https://placehold.co/1080x1440/222/f0f0f0?text=DVINTAGES"];
 
   function handleAdd() {
-    onAddToCart({ id: p.id, name: p.name, price: p.price, image_url: images[0] });
+    onAddToCart({ id: p.id, name: p.name, price: p.price, image_url: images[0], inventory: p.inventory });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
@@ -245,7 +245,7 @@ export default function HomePage() {
       .catch(() => setLoading(false));
   }, [category]);
 
-  function handleAddToCart(item: { id: number; name: string; price: number; image_url: string }) {
+  function handleAddToCart(item: { id: number; name: string; price: number; image_url: string; inventory: number }) {
     addItem(item);
     setCartOpen(true);
   }

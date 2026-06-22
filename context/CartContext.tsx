@@ -7,6 +7,7 @@ export interface CartItem {
   price: number;
   image_url: string;
   quantity: number;
+  inventory: number; // ← tambah ini buat limit stok
 }
 
 interface CartContextType {
@@ -39,6 +40,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => {
       const exists = prev.find((i) => i.id === product.id);
       if (exists) {
+        // Jangan tambah kalau udah maks stok
+        if (exists.quantity >= product.inventory) return prev;
         return prev.map((i) =>
           i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
@@ -53,7 +56,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function updateQty(id: number, qty: number) {
     if (qty <= 0) return removeItem(id);
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i)));
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        // Clamp qty ke inventory
+        const clamped = Math.min(qty, i.inventory);
+        return { ...i, quantity: clamped };
+      })
+    );
   }
 
   function clearCart() {

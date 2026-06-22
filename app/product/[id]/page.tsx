@@ -69,13 +69,14 @@ export default function ProductDetailPage() {
   }
 
   function handleAddToCart() {
-    if (!product) return;
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image_url: product.image_url[0] || "",
-    });
+  if (!product) return;
+  addItem({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    image_url: product.image_url[0] || "",
+    inventory: product.inventory, // ← tambah ini
+  });
     setAdded(true);
     setCartOpen(true);
     setTimeout(() => setAdded(false), 1500);
