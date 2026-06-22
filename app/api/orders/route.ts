@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
       `INSERT INTO orders
         (customer_name, customer_contact, customer_address, total_price,
          payment_method, payment_status, order_status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())`,
+        VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())`,
       [customer_name, customer_contact, customer_address, totalPrice, payment_method, initialPaymentStatus]
     );
     const orderId = orderResult.insertId;
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
     await connection.execute(
       `INSERT INTO order_shipping
         (order_id, destination_id, destination_label, courier, service, cost, etd, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [orderId, shipping_destination_id, shipping_destination_label,
        shipping_courier, shipping_service, shipping_cost, shipping_etd || null]
     );
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
       shippingEtd: shipping_etd || "-",
       totalPrice,
       paymentMethod: payment_method,
-    }).catch((err) => console.error("Email error:", err));
+    } as any).catch((err) => console.error("Email error:", err));
 
     return NextResponse.json({
       success: true,
