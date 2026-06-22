@@ -36,7 +36,7 @@ img {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 .nav-logo {
@@ -728,13 +728,12 @@ footer p {
 }
 
 @media (max-width: 480px) {
-  /* yang sudah ada tetap, tambahin ini: */
   .nav-links {
     gap: 2px;
   }
   .nav-links a {
     font-size: 0.75rem;
-    padding: 5px 5px;
+    padding: 4px 5px;
     letter-spacing: 0;
   }
   .social-icons {
@@ -745,8 +744,9 @@ footer p {
     padding: 3px;
   }
   .theme-toggle-btn {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
   }
   .cart-nav-btn {
     font-size: 1rem;
@@ -757,7 +757,13 @@ footer p {
     padding: 3px 5px;
   }
   .header-logo {
-    height: 36px;
-    width: 36px;
+    height: 32px;
+    width: 32px;
+  }
+  .banner-slide h1 {
+    font-size: 2.5rem;
+  }
+  .banner-slide p {
+    font-size: 1rem;
   }
 }
