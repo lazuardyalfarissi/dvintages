@@ -58,7 +58,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
   const [price, setPrice] = useState(0);
   const [waNumber, setWaNumber] = useState("");
 
-  // ── Detail produk (harga, nama) — diambil saat modal dibuka ─────────────
+  // ── Detail produk — diambil saat modal dibuka ─────────────────────────
   const [productLoading, setProductLoading] = useState(true);
   const [productError, setProductError] = useState("");
 
@@ -78,7 +78,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
   const [timeLeft, setTimeLeft] = useState("");
   const [urgency, setUrgency] = useState<"normal" | "warning" | "critical">("normal");
 
-  // ── Ambil detail produk (harga, nama) saat modal dibuka ─────────────────
+  // ── Ambil detail produk saat modal dibuka ────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -101,9 +101,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
     }
 
     loadProduct();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [productId]);
 
   // ── Cari kota tujuan (debounced) ───────────────────────────────────────
@@ -128,9 +126,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
       }
     }, 400);
 
-    return () => {
-      if (cityDebounce.current) clearTimeout(cityDebounce.current);
-    };
+    return () => { if (cityDebounce.current) clearTimeout(cityDebounce.current); };
   }, [citySearch, selectedCity]);
 
   // Tutup dropdown kalau klik di luar
@@ -222,7 +218,15 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
 
       if (paymentChoice === "wa_manual") {
         const productUrl = `${window.location.origin}/product/${productId}`;
-        const msg = `Halo, saya sudah membuat pesanan #${newOrderId}.\n\nNama: ${name}\nAlamat: ${address}\nTujuan: ${selectedCity.label}\nKurir: ${selectedShipping.courier} - ${selectedShipping.service} (Rp ${new Intl.NumberFormat("id-ID").format(selectedShipping.cost)})\nProduk: ${pName}\nLink Produk: ${productUrl}\n\nMohon info untuk pembayaran. Terima kasih.`;
+        const msg =
+          `Halo, saya sudah membuat pesanan #${newOrderId}.\n\n` +
+          `Nama: ${name}\n` +
+          `Alamat: ${address}\n` +
+          `Tujuan: ${selectedCity.label}\n` +
+          `Kurir: ${selectedShipping.courier} - ${selectedShipping.service} (Rp ${new Intl.NumberFormat("id-ID").format(selectedShipping.cost)})\n` +
+          `Produk: ${pName}\n` +
+          `Link Produk: ${productUrl}\n\n` +
+          `Mohon info untuk pembayaran. Terima kasih.`;
         window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank");
         setStep("success");
       } else {
@@ -264,7 +268,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
     }
   }
 
-  // ── Polling ────────────────────────────────────────────────────────────
+  // ── Polling status pembayaran ─────────────────────────────────────────
   const pollStatus = useCallback(async () => {
     if (!orderId) return;
     try {
@@ -291,9 +295,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
     if (step !== "pay") return;
     pollStatus();
     pollRef.current = setInterval(pollStatus, 5000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [step, pollStatus]);
 
   // ── Countdown ──────────────────────────────────────────────────────────
@@ -332,9 +334,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
 
     tick();
     countdownRef.current = setInterval(tick, 1000);
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [step, expiredAt]);
 
   // Cleanup on unmount
@@ -349,7 +349,8 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
     return m !== "qris";
   }
 
-  // Tutup modal hanya boleh kalau bukan di step "pay" yang masih pending
+  // Tutup modal — kalau step "pay" dan masih pending, tidak bisa ditutup
+  // dengan klik overlay (harus pakai tombol Tutup)
   function handleOverlayClick(e: React.MouseEvent) {
     if (e.target !== e.currentTarget) return;
     if (step === "pay" && paymentStatus === "pending") return;
@@ -365,6 +366,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
           <>
             <h3>Lengkapi Data Pesanan</h3>
             <form className="order-form" onSubmit={handleSubmitForm}>
+
               <div className="form-group">
                 <label className="form-label">Nama Lengkap</label>
                 <input
@@ -375,6 +377,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
+
               <div className="form-group">
                 <label className="form-label">Nomor WhatsApp</label>
                 <input
@@ -386,6 +389,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
                   onChange={(e) => setContact(e.target.value)}
                 />
               </div>
+
               <div className="form-group">
                 <label className="form-label">Alamat Lengkap (untuk pengiriman)</label>
                 <textarea
@@ -492,6 +496,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
                 </div>
               )}
 
+              {/* ── Metode pemesanan ──────────────────────────────────── */}
               <div className="form-group">
                 <label className="form-label">Metode Pemesanan</label>
                 <div className="payment-choice-group">
@@ -555,6 +560,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
 
               {productError && <p className="form-error">{productError}</p>}
               {error && <p className="form-error">{error}</p>}
+
               <div className="modal-buttons">
                 <button type="button" className="modal-btn-cancel" onClick={onClose}>
                   Batal
@@ -582,7 +588,10 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
           <>
             <h3>Pilih Metode Pembayaran</h3>
             <p className="modal-subtext">
-              Subtotal: <strong>Rp {new Intl.NumberFormat("id-ID").format(price + (selectedShipping?.cost || 0))}</strong>
+              Subtotal:{" "}
+              <strong>
+                Rp {new Intl.NumberFormat("id-ID").format(price + (selectedShipping?.cost || 0))}
+              </strong>
               <br />
               <span style={{ fontSize: "0.8rem" }}>+ biaya admin sesuai metode yang dipilih</span>
             </p>
@@ -667,7 +676,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
               <>
                 <h3>Selesaikan Pembayaran</h3>
 
-                {/* ── Rincian biaya: harga + ongkir + fee Pakasir ─────── */}
+                {/* ── Rincian biaya ──────────────────────────────────── */}
                 <div className="order-summary">
                   <div className="order-summary-row">
                     <span>Harga produk + ongkir</span>
@@ -751,6 +760,7 @@ export default function OrderModal({ productId, onClose }: OrderModalProps) {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

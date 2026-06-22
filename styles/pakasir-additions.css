@@ -3,53 +3,118 @@
    Tempel di bagian bawah file CSS detail produk (detailStyles) DAN
    di file styles/store.css, supaya konsisten di kedua halaman.
    Menggunakan CSS variable yang sama dengan tema dark/light yang sudah ada.
+
+   REVISI: fix modal/form melebar di mobile & desktop.
+   - .qris-image: dari fixed width px -> responsive (max-width: 100%)
+   - .payment-choice div: tambah min-width: 0 supaya flex child tidak
+     memaksa parent melebar saat teks panjang
+   - Tambahan box-sizing & word-break sebagai safety net di beberapa elemen
 ============================================================================ */
 
 .modal-subtext { font-size: 0.9rem; color: var(--text-color-secondary); margin-bottom: 16px; text-align: center; }
-.form-error { color: #f56565; margin-bottom: 12px; font-size: 0.9rem; }
+.form-error { color: #f56565; margin-bottom: 12px; font-size: 0.9rem; word-break: break-word; }
 
 textarea.form-input { resize: vertical; min-height: 70px; font-family: inherit; }
 
 /* ── Pilihan metode pemesanan (WA manual / Pakasir) ───────────────────── */
-.payment-choice-group { display: flex; flex-direction: column; gap: 10px; }
+.payment-choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
 .payment-choice {
   display: flex; align-items: flex-start; gap: 10px;
   border: 2px solid var(--border-color-strong); border-radius: 10px;
   padding: 12px 14px; cursor: pointer; transition: all 0.2s;
   background: var(--input-bg);
+  width: 100%;
+  box-sizing: border-box;
 }
 .payment-choice:hover { border-color: var(--primary-color); }
 .payment-choice.active { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-shadow); }
 .payment-choice input[type="radio"] { margin-top: 3px; accent-color: var(--primary-color); flex-shrink: 0; }
-.payment-choice div { display: flex; flex-direction: column; gap: 2px; text-align: left; }
-.payment-choice strong { font-size: 0.95rem; color: var(--text-color); }
-.payment-choice span { font-size: 0.8rem; color: var(--text-color-subtle); }
+.payment-choice div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  min-width: 0; /* PENTING: izinkan flex child shrink, jangan biarkan teks panjang nge-push lebar parent */
+  flex: 1;
+}
+.payment-choice strong { font-size: 0.95rem; color: var(--text-color); word-break: break-word; }
+.payment-choice span { font-size: 0.8rem; color: var(--text-color-subtle); word-break: break-word; }
 
 /* ── Daftar channel pembayaran Pakasir (QRIS / VA) ─────────────────────── */
-.channel-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; margin-bottom: 16px; }
+.channel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
 .channel-item {
   display: flex; align-items: center; gap: 10px;
   border: 2px solid var(--border-color-strong); border-radius: 8px;
   padding: 10px 12px; cursor: pointer; transition: all 0.2s;
   background: var(--input-bg);
+  width: 100%;
+  box-sizing: border-box;
 }
 .channel-item:hover { border-color: var(--primary-color); }
 .channel-item.active { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-shadow); }
 .channel-item input[type="radio"] { accent-color: var(--primary-color); flex-shrink: 0; }
-.channel-item span { font-size: 0.9rem; color: var(--text-color); text-align: left; }
+.channel-item span { font-size: 0.9rem; color: var(--text-color); text-align: left; word-break: break-word; min-width: 0; flex: 1; }
 
 /* ── Box QRIS ───────────────────────────────────────────────────────────── */
-.qris-box { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 16px; }
-.qris-image { width: 220px; height: 220px; border-radius: 10px; border: 2px solid var(--border-color-strong); background: #fff; padding: 8px; }
+.qris-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.qris-image {
+  /* FIX: sebelumnya width & height fixed 220px tanpa max-width,
+     ini yang bikin modal kepush lebar di layar sempit (HP kecil),
+     karena 220px + padding bisa lebih lebar dari ruang tersisa modal. */
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  border: 2px solid var(--border-color-strong);
+  background: #fff;
+  padding: 8px;
+  box-sizing: border-box;
+}
 
 /* ── Box Virtual Account ───────────────────────────────────────────────── */
 .va-box {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   border: 2px dashed var(--border-color-strong); border-radius: 10px;
   padding: 18px; margin-bottom: 16px; background: var(--input-bg);
+  width: 100%;
+  box-sizing: border-box;
 }
 .va-label { font-size: 0.85rem; color: var(--text-color-subtle); text-transform: uppercase; letter-spacing: 0.5px; }
-.va-number { font-family: monospace; font-size: 1.4rem; font-weight: 700; color: var(--text-color); letter-spacing: 1px; word-break: break-all; text-align: center; }
+.va-number {
+  font-family: monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-color);
+  letter-spacing: 1px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  text-align: center;
+  max-width: 100%;
+}
 .copy-btn {
   padding: 8px 18px; border-radius: 8px; border: 2px solid var(--primary-color);
   background: transparent; color: var(--primary-color); font-weight: 700;
@@ -62,6 +127,7 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: inherit; 
   text-align: center; font-size: 0.9rem; color: var(--text-color);
   margin-bottom: 14px; padding: 8px 12px; border-radius: 8px;
   transition: all 0.3s;
+  word-break: break-word;
 }
 .countdown-text.urgency-normal { background: transparent; }
 .countdown-text.urgency-warning { background: #f6ad5533; color: #c05621; font-weight: 600; }
@@ -76,11 +142,168 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: inherit; 
 .payment-waiting-text { text-align: center; font-size: 0.85rem; color: var(--text-color-subtle); margin-bottom: 14px; }
 
 /* ── Hasil akhir (sukses / expired) ────────────────────────────────────── */
-.payment-result { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.payment-result { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; box-sizing: border-box; }
 .payment-result-icon {
   width: 56px; height: 56px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.6rem; font-weight: 700; margin-bottom: 14px;
+  flex-shrink: 0;
 }
 .payment-result-icon.success { background: #2f855a33; color: #2f855a; }
 .payment-result-icon.expired { background: #f5656533; color: #f56565; }
+
+/* ============================================================================
+   Tambahan CSS untuk fitur Ongkir (RajaOngkir) + Ringkasan Biaya
+   Tempel di BAWAH isi pakasir-additions.css yang sudah ada.
+   Pakai CSS variable tema yang sama supaya konsisten dark/light mode.
+============================================================================ */
+
+/* ── Autocomplete kota tujuan ───────────────────────────────────────────── */
+.city-autocomplete {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+.city-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--dropdown-bg);
+  border: 2px solid var(--border-color-strong);
+  border-radius: 8px;
+  box-shadow: 0 12px 25px var(--shadow-color-strong);
+  z-index: 30;
+  box-sizing: border-box;
+}
+.city-dropdown-item {
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  cursor: pointer;
+  word-break: break-word;
+}
+.city-dropdown-item:hover {
+  background: var(--input-bg);
+}
+.city-dropdown-empty {
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  color: var(--text-color-subtle);
+  text-align: center;
+}
+
+/* ── Tombol cek ongkir ───────────────────────────────────────────────────── */
+.shipping-calc-btn {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-sizing: border-box;
+}
+.shipping-calc-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: var(--text-on-primary);
+}
+.shipping-calc-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Daftar opsi kurir hasil hitung ongkir ─────────────────────────────── */
+.shipping-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.shipping-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid var(--border-color-strong);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--input-bg);
+  width: 100%;
+  box-sizing: border-box;
+}
+.shipping-option:hover { border-color: var(--primary-color); }
+.shipping-option.active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-shadow);
+}
+.shipping-option input[type="radio"] { accent-color: var(--primary-color); flex-shrink: 0; }
+.shipping-option div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  min-width: 0;
+  flex: 1;
+}
+.shipping-option strong { font-size: 0.85rem; color: var(--text-color); word-break: break-word; }
+.shipping-option span { font-size: 0.75rem; color: var(--text-color-subtle); word-break: break-word; }
+.shipping-option-cost {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Ringkasan biaya (harga + ongkir + fee) ────────────────────────────── */
+.order-summary {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--input-bg);
+  border: 2px solid var(--border-color-strong);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.order-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--text-color-secondary);
+  padding: 4px 0;
+}
+.order-summary-row span:first-child {
+  min-width: 0;
+  word-break: break-word;
+}
+.order-summary-row span:last-child {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.order-summary-row.total {
+  border-top: 1px solid var(--border-color-strong);
+  margin-top: 6px;
+  padding-top: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+.order-summary-note {
+  font-size: 0.75rem;
+  color: var(--text-color-subtle);
+  margin: 4px 0 0 0;
+  font-style: italic;
+}
