@@ -265,20 +265,30 @@ export default function HomePage() {
       <BannerCarousel banners={banners} />
 
       <main id="product-section" className="product-section container">
-        <h2 className="section-title">{title}</h2>
-        <div className="products-grid">
-          {loading ? (
-            <div className="loading">⏳ Memuat produk...</div>
-          ) : products.length === 0 ? (
-            <div className="empty-state">📦 Belum ada produk di kategori ini.</div>
-          ) : (
-            products.map((p) => (
-              <ProductCard key={p.id} p={p} onAddToCart={handleAddToCart} />
-            ))
-          )}
-        </div>
-      </main>
-
+      <h2 className="section-title">{title}</h2>
+          <div className="products-grid">
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="product-card skeleton-card">
+                  <div className="skeleton-image" />
+                  <div className="product-info">
+                    <div className="skeleton-line w80" />
+                    <div className="skeleton-line w50" />
+                    <div className="skeleton-line w60" />
+                    <div className="skeleton-btn" />
+                  </div>
+                </div>
+              ))
+            ) : products.length === 0 ? (
+              <div className="empty-state">📦 Belum ada produk di kategori ini.</div>
+            ) : (
+              products.map((p) => (
+                <ProductCard key={p.id} p={p} onAddToCart={handleAddToCart} />
+              ))
+            )}
+          </div>
+        </main>
+        
       <footer>
         <div className="container">
           <p suppressHydrationWarning>&copy; {new Date().getFullYear()} DVINTAGES</p>

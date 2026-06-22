@@ -35,7 +35,12 @@ export async function GET(req: NextRequest) {
       price: Number(p.price),
     }));
 
-    return NextResponse.json({ success: true, data: products });
+    return NextResponse.json({ success: true, data: products }, {
+      headers: {
+        "Cache-Control": "s-maxage=30, stale-while-revalidate=60",
+      },
+    });
+
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message },

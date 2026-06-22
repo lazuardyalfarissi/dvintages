@@ -21,14 +21,18 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...product,
-        image_url: parseImageUrls(product.image_url),
-        price: Number(product.price),
-      },
-    });
+   return NextResponse.json({
+    success: true,
+    data: {
+      ...product,
+      image_url: parseImageUrls(product.image_url),
+      price: Number(product.price),
+    },
+  }, {
+    headers: {
+      "Cache-Control": "s-maxage=30, stale-while-revalidate=60",
+    },
+  });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message },
