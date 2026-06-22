@@ -364,8 +364,8 @@ const detailStyles = `
     .swipe-dots { display: flex; }
   }
   @media (min-width: 768px) { .swipe-dots { display: none; } }
-  .product-detail-info { padding: 1.5rem; display: flex; flex-direction: column; }
-  .product-detail-name { font-family: 'Anton', sans-serif; font-size: clamp(1.8rem, 5vw, 3rem); margin-bottom: 1rem; color: var(--text-color); line-height: 1.2; text-transform: uppercase; word-break: break-word; }
+  .product-detail-info { padding: 1.5rem; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .product-detail-name { font-family: 'Anton', sans-serif; font-size: clamp(1.4rem, 5vw, 3rem); margin-bottom: 1rem; color: var(--text-color); line-height: 1.2; text-transform: uppercase; word-break: break-word; overflow-wrap: break-word; hyphens: auto; }
   .product-detail-price { font-family: 'Anton', sans-serif; font-size: clamp(1.3rem, 4vw, 2.2rem); color: var(--primary-color); margin-bottom: 1rem; letter-spacing: 1px; }
   .product-detail-stock { font-size: 0.95rem; color: var(--text-color-subtle); margin-bottom: 1.5rem; }
   .product-detail-description { font-size: 0.95rem; color: var(--text-color-secondary); line-height: 1.7; margin-bottom: 2rem; white-space: pre-wrap; flex-grow: 1; word-break: break-word; }
