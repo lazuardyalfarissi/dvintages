@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
 import CheckoutModal from "@/components/CheckoutModal";
+import "@/styles/store.css";
 
 interface Product {
   id: number; name: string; description: string; price: number;
@@ -382,7 +383,7 @@ const detailStyles = `
   .header-logo { height: 40px; width: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color-strong); transition: transform 0.3s; }
   .header-logo:hover { transform: rotate(360deg); }
   .nav-links { list-style: none; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0; padding: 0; }
-  .nav-links a { text-decoration: none; color: var(--text-color-secondary); font-weight: 700; transition: all 0.3s; padding: 6px 8px; border-radius: 6px; font-family: 'Anton', sans-serif; font-size: 1rem; letter-spacing: 1px; text-transform: uppercase; }
+  .nav-links a { text-decoration: none; color: var(--text-color-secondary); font-weight: 700; transition: all 0.3s; padding: 6px 8px; border-radius: 6px; font-family: 'Anton', sans-serif; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; }
   .nav-links a:hover { color: var(--primary-color); }
   .dropdown { position: relative; }
   .dropdown-content { display: none; position: absolute; top: 120%; left: 50%; transform: translateX(-50%); background: var(--dropdown-bg); min-width: 160px; box-shadow: 0 12px 25px var(--shadow-color-strong); z-index: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
