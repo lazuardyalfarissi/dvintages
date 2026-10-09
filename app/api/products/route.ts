@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import pool, { parseImageUrls } from "@/lib/db";
-import { uploadFile, deleteFile } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { parseImageUrls } from "@/lib/images";
+import { uploadFile } from "@/lib/supabase";
 
 // GET /api/products?category=all
 export async function GET(req: NextRequest) {
@@ -11,36 +12,35 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category") || "all";
     const adminMode = searchParams.get("admin") === "1";
 
-    let sql: string;
-    let params: string[] = [];
+    let query = supabaseAdmin.from("products").select("*").order("id", { ascending: false });
 
-    if (adminMode) {
-      // Admin: tampilkan semua produk termasuk inactive
-      sql = "SELECT * FROM products ORDER BY id DESC";
-    } else {
+    if (!adminMode) {
       // Public: hanya active dan sold_out
-      sql =
-        "SELECT * FROM products WHERE status IN ('active', 'sold_out') ORDER BY FIELD(status, 'active', 'sold_out'), id DESC";
-      if (category !== "all") {
-        sql =
-          "SELECT * FROM products WHERE status IN ('active', 'sold_out') AND category = ? ORDER BY FIELD(status, 'active', 'sold_out'), id DESC";
-        params = [category];
-      }
+      query = query.in("status", ["active", "sold_out"]);
+      if (category !== "all") query = query.eq("category", category);
     }
 
-    const [rows] = await pool.execute(sql, params);
-    const products = (rows as any[]).map((p) => ({
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    let rows = data ?? [];
+
+    // Pengganti ORDER BY FIELD(status, 'active', 'sold_out'): active dulu, lalu sold_out, id terbaru di atas
+    if (!adminMode) {
+      const rank = (s: string) => (s === "active" ? 0 : 1);
+      rows = [...rows].sort((a, b) => rank(a.status) - rank(b.status) || b.id - a.id);
+    }
+
+    const products = rows.map((p) => ({
       ...p,
       image_url: parseImageUrls(p.image_url),
       price: Number(p.price),
     }));
 
-    return NextResponse.json({ success: true, data: products }, {
-      headers: {
-        "Cache-Control": "s-maxage=30, stale-while-revalidate=60",
-      },
-    });
-
+    return NextResponse.json(
+      { success: true, data: products },
+      { headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=60" } }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message },
@@ -58,9 +58,10 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const name = formData.get("name") as string;
-    const description = formData.get("description") as string || "";
+    const description = (formData.get("description") as string) || "";
     const price = parseFloat((formData.get("price") as string).replace(/\./g, ""));
-    const inventory = parseInt(formData.get("inventory") as string);
+    const inventoryRaw = parseInt(formData.get("inventory") as string);
+    const inventory = Number.isNaN(inventoryRaw) ? 0 : inventoryRaw;
     const category = formData.get("category") as string;
     const status = formData.get("status") as string;
 
@@ -81,17 +82,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const imageUrlStr = imageUrls.join(",");
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .insert({
+        name,
+        description,
+        price,
+        inventory,
+        category,
+        image_url: imageUrls.join(","),
+        status,
+      })
+      .select("id")
+      .single();
 
-    const [result] = await pool.execute(
-      "INSERT INTO products (name, description, price, inventory, category, image_url, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [name, description, price, inventory, category, imageUrlStr, status]
-    );
+    if (error) throw new Error(error.message);
 
     return NextResponse.json({
       success: true,
       message: "Produk berhasil ditambahkan",
-      data: { id: (result as any).insertId },
+      data: { id: data.id },
     });
   } catch (error: any) {
     return NextResponse.json(

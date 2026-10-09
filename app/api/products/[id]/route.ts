@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import pool, { parseImageUrls } from "@/lib/db";
-import { uploadFile, deleteFile } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { parseImageUrls } from "@/lib/images";
+import { deleteFile, uploadFile } from "@/lib/supabase";
 
 // GET /api/products/[id]
 export async function GET(
@@ -11,8 +12,20 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id);
-    const [rows] = await pool.execute("SELECT * FROM products WHERE id = ?", [id]);
-    const product = (rows as any[])[0];
+    if (Number.isNaN(id)) {
+      return NextResponse.json(
+        { success: false, message: "ID produk tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    const { data: product, error } = await supabaseAdmin
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
 
     if (!product) {
       return NextResponse.json(
@@ -21,18 +34,21 @@ export async function GET(
       );
     }
 
-   return NextResponse.json({
-    success: true,
-    data: {
-      ...product,
-      image_url: parseImageUrls(product.image_url),
-      price: Number(product.price),
-    },
-  }, {
-    headers: {
-      "Cache-Control": "s-maxage=30, stale-while-revalidate=60",
-    },
-  });
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          ...product,
+          image_url: parseImageUrls(product.image_url),
+          price: Number(product.price),
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "s-maxage=30, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message },
@@ -52,14 +68,29 @@ export async function PUT(
 
   try {
     const id = parseInt(params.id);
+    if (Number.isNaN(id)) {
+      return NextResponse.json(
+        { success: false, message: "ID produk tidak valid" },
+        { status: 400 }
+      );
+    }
+
     const formData = await req.formData();
 
     const name = formData.get("name") as string;
-    const description = formData.get("description") as string || "";
+    const description = (formData.get("description") as string) || "";
     const price = parseFloat((formData.get("price") as string).replace(/\./g, ""));
-    const inventory = parseInt(formData.get("inventory") as string);
+    const inventoryRaw = parseInt(formData.get("inventory") as string);
+    const inventory = Number.isNaN(inventoryRaw) ? 0 : inventoryRaw;
     const category = formData.get("category") as string;
     const status = formData.get("status") as string;
+
+    if (!name || isNaN(price)) {
+      return NextResponse.json(
+        { success: false, message: "Nama dan harga wajib diisi" },
+        { status: 400 }
+      );
+    }
 
     // URL gambar yang masih dipertahankan dari frontend
     const retainedUrlsRaw = formData.get("retained_image_urls") as string;
@@ -68,12 +99,20 @@ export async function PUT(
       : [];
 
     // Ambil gambar lama dari DB
-    const [oldRows] = await pool.execute(
-      "SELECT image_url FROM products WHERE id = ?",
-      [id]
-    );
-    const oldProduct = (oldRows as any[])[0];
-    const oldUrls = parseImageUrls(oldProduct?.image_url);
+    const { data: oldProduct, error: oldErr } = await supabaseAdmin
+      .from("products")
+      .select("image_url")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (oldErr) throw new Error(oldErr.message);
+    if (!oldProduct) {
+      return NextResponse.json(
+        { success: false, message: "Produk tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+    const oldUrls = parseImageUrls(oldProduct.image_url);
 
     // Upload gambar baru
     const files = formData.getAll("images") as File[];
@@ -95,10 +134,20 @@ export async function PUT(
       }
     }
 
-    await pool.execute(
-      "UPDATE products SET name=?, description=?, price=?, inventory=?, category=?, image_url=?, status=? WHERE id=?",
-      [name, description, price, inventory, category, finalUrls.join(","), status, id]
-    );
+    const { error: updErr } = await supabaseAdmin
+      .from("products")
+      .update({
+        name,
+        description,
+        price,
+        inventory,
+        category,
+        image_url: finalUrls.join(","),
+        status,
+      })
+      .eq("id", id);
+
+    if (updErr) throw new Error(updErr.message);
 
     return NextResponse.json({ success: true, message: "Produk berhasil diupdate" });
   } catch (error: any) {
@@ -120,22 +169,48 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id);
+    if (Number.isNaN(id)) {
+      return NextResponse.json(
+        { success: false, message: "ID produk tidak valid" },
+        { status: 400 }
+      );
+    }
 
     // Ambil URL gambar dulu sebelum dihapus
-    const [rows] = await pool.execute(
-      "SELECT image_url FROM products WHERE id = ?",
-      [id]
-    );
-    const product = (rows as any[])[0];
+    const { data: product, error: findErr } = await supabaseAdmin
+      .from("products")
+      .select("image_url")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (findErr) throw new Error(findErr.message);
     if (!product)
       return NextResponse.json(
         { success: false, message: "Produk tidak ditemukan" },
         { status: 404 }
       );
 
-    await pool.execute("DELETE FROM products WHERE id = ?", [id]);
+    const { error: delErr } = await supabaseAdmin
+      .from("products")
+      .delete()
+      .eq("id", id);
 
-    // Hapus semua gambar dari Supabase
+    if (delErr) {
+      // 23503 = foreign key violation (produk sudah pernah dipesan, ada di order_items)
+      if (delErr.code === "23503") {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Produk ini sudah pernah dipesan jadi nggak bisa dihapus. Ubah statusnya jadi inactive aja.",
+          },
+          { status: 409 }
+        );
+      }
+      throw new Error(delErr.message);
+    }
+
+    // Hapus semua gambar dari Supabase Storage (setelah row berhasil dihapus)
     const urls = parseImageUrls(product.image_url);
     for (const url of urls) {
       await deleteFile(url);

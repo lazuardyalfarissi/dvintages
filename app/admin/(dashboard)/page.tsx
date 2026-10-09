@@ -391,7 +391,7 @@ export default function AdminPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      <style>{adminStyles}</style>
+      <style suppressHydrationWarning>{adminStyles}</style>
 
       <div className="container">
         {/* Header */}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import pool from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 // PATCH /api/orders/[id] — update status (admin only)
 export async function PATCH(
@@ -14,56 +14,43 @@ export async function PATCH(
 
   try {
     const id = parseInt(params.id);
+    if (Number.isNaN(id)) {
+      return NextResponse.json(
+        { success: false, message: "ID pesanan tidak valid" },
+        { status: 400 }
+      );
+    }
+
     const { status } = await req.json();
 
-    const conn = await pool.getConnection();
-    await conn.beginTransaction();
+    // Update status, sinkron payment_status, dan pengurangan stok
+    // jalan atomik di dalam fungsi DB update_order_status
+    const { error } = await supabaseAdmin.rpc("update_order_status", {
+      p_id: id,
+      p_status: status,
+    });
 
-    try {
-      await conn.execute("UPDATE orders SET order_status = ? WHERE id = ?", [
-        status,
-        id,
-      ]);
-
-      // Jika dibatalkan dan pesanan ini pakai Pakasir, sinkronkan payment_status
-      // di DB lokal supaya admin tidak melihat status pembayaran yang
-      // membingungkan (mis. masih 'pending' padahal order sudah dibatalkan).
-      // Catatan: ini HANYA update DB lokal, tidak memanggil API cancel Pakasir.
-      if (status === "Dibatalkan") {
-        await conn.execute(
-          `UPDATE orders
-           SET payment_status = 'cancelled'
-           WHERE id = ? AND payment_method = 'pakasir' AND payment_status = 'pending'`,
-          [id]
+    if (error) {
+      const msg = error.message || "";
+      if (msg.includes("ORDER_NOT_FOUND")) {
+        return NextResponse.json(
+          { success: false, message: "Pesanan tidak ditemukan" },
+          { status: 404 }
         );
       }
-
-      // Jika status 'Selesai', kurangi stok
-      if (status === "Selesai") {
-        const [items] = await conn.execute(
-          "SELECT product_id, quantity FROM order_items WHERE order_id = ?",
-          [id]
+      if (msg.includes("INVALID_STATUS")) {
+        return NextResponse.json(
+          { success: false, message: "Status pesanan tidak valid" },
+          { status: 400 }
         );
-        for (const item of items as any[]) {
-          await conn.execute(
-            "UPDATE products SET inventory = inventory - ? WHERE id = ?",
-            [item.quantity, item.product_id]
-          );
-        }
       }
-
-      await conn.commit();
-      conn.release();
-
-      return NextResponse.json({
-        success: true,
-        message: "Status pesanan berhasil diupdate",
-      });
-    } catch (err) {
-      await conn.rollback();
-      conn.release();
-      throw err;
+      throw new Error(msg);
     }
+
+    return NextResponse.json({
+      success: true,
+      message: "Status pesanan berhasil diupdate",
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message },
@@ -83,33 +70,31 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id);
-    const conn = await pool.getConnection();
-    await conn.beginTransaction();
-
-    try {
-      // order_payments punya FK ON DELETE CASCADE ke orders, jadi otomatis
-      // ikut terhapus saat order dihapus — tidak perlu DELETE manual di sini.
-      await conn.execute("DELETE FROM order_items WHERE order_id = ?", [id]);
-      const [result] = await conn.execute("DELETE FROM orders WHERE id = ?", [id]);
-
-      if ((result as any).affectedRows === 0) {
-        await conn.rollback();
-        conn.release();
-        return NextResponse.json(
-          { success: false, message: "Pesanan tidak ditemukan" },
-          { status: 404 }
-        );
-      }
-
-      await conn.commit();
-      conn.release();
-
-      return NextResponse.json({ success: true, message: "Pesanan berhasil dihapus" });
-    } catch (err) {
-      await conn.rollback();
-      conn.release();
-      throw err;
+    if (Number.isNaN(id)) {
+      return NextResponse.json(
+        { success: false, message: "ID pesanan tidak valid" },
+        { status: 400 }
+      );
     }
+
+    // order_items, order_payments, dan order_shipping punya FK ON DELETE CASCADE
+    // ke orders, jadi semuanya ikut terhapus otomatis dalam satu perintah ini.
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .delete()
+      .eq("id", id)
+      .select("id");
+
+    if (error) throw new Error(error.message);
+
+    if (!data || data.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Pesanan tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: "Pesanan berhasil dihapus" });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message },
